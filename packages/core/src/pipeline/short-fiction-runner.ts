@@ -164,13 +164,21 @@ async function produceShort(
         SHORT_FICTION_EN_MIN_WORDS_PER_CHAPTER,
         SHORT_FICTION_EN_MAX_WORDS_PER_CHAPTER,
       )
-    : boundedInteger(
-        options.charsPerChapter,
-        SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
-        "charsPerChapter",
-        SHORT_FICTION_MIN_CHARS_PER_CHAPTER,
-        SHORT_FICTION_MAX_CHARS_PER_CHAPTER,
-      );
+    : language === "ko"
+      ? boundedInteger(
+          options.charsPerChapter,
+          SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
+          "charsPerChapter",
+          SHORT_FICTION_MIN_CHARS_PER_CHAPTER,
+          SHORT_FICTION_MAX_CHARS_PER_CHAPTER,
+        )
+      : boundedInteger(
+          options.charsPerChapter,
+          SHORT_FICTION_DEFAULT_CHARS_PER_CHAPTER,
+          "charsPerChapter",
+          SHORT_FICTION_MIN_CHARS_PER_CHAPTER,
+          SHORT_FICTION_MAX_CHARS_PER_CHAPTER,
+        );
 
   // Resume the (3-stage) outline from disk if v002 already exists for this id —
   // the writer + everything downstream only need the outline markdown.
@@ -301,15 +309,25 @@ async function produceShort(
             "",
             revisionWarning,
           ].join("\n")
-        : [
-            "# 第二轮改稿未采用",
-            "",
-            "系统没有用不完整或解析失败的改稿覆盖完整首稿。",
-            "",
-            "## 原因",
-            "",
-            revisionWarning,
-          ].join("\n"));
+        : language === "ko"
+          ? [
+              "# 2차 수정안 미채택",
+              "",
+              "시스템은 불완전하거나 파싱할 수 없는 수정안으로 완전한 첫 초안을 덮어쓰는 것을 거부했습니다.",
+              "",
+              "## 사유",
+              "",
+              revisionWarning,
+            ].join("\n")
+          : [
+              "# 第二轮改稿未采用",
+              "",
+              "系统没有用不完整或解析失败的改稿覆盖完整首稿。",
+              "",
+              "## 原因",
+              "",
+              revisionWarning,
+            ].join("\n"));
     }
 
     await writeFinalArtifacts(root, baseDir, finalDraft, language);
@@ -497,7 +515,9 @@ async function writePackageArtifacts(
   const finalDir = join(baseDir, "final");
   const headings = language === "en"
     ? { intro: "## Synopsis", sellingPoints: "## Selling Points", coverPrompt: "## Cover Prompt" }
-    : { intro: "## 简介", sellingPoints: "## 卖点", coverPrompt: "## 封面提示词" };
+    : language === "ko"
+      ? { intro: "## 소개", sellingPoints: "## 판매 포인트", coverPrompt: "## 커버 프롬프트" }
+      : { intro: "## 简介", sellingPoints: "## 卖点", coverPrompt: "## 封面提示词" };
   await writeJson(root, join(finalDir, "sales-package.json"), salesPackage);
   await writeText(root, join(finalDir, "sales-package.md"), [
     `# ${salesPackage.title}`,
@@ -930,6 +950,31 @@ function buildCoverImagePrompt(
       "Cover direction: a platform short-fiction book cover, not a movie poster. The title lettering is the primary visual — reserve a large two-to-four-line type zone; character in close-up or half-body with a charged expression (cold smirk, shock, breakdown, menace, or payback); props few but large, telegraphing the conflict at a glance.",
       "High-contrast, high-saturation colors that read as a phone-list thumbnail. Avoid realistic corporate photography, landscape video thumbnails, magazine editorial looks, delicate thin lettering, and long runs of text.",
       "If the model's text rendering is unreliable, prioritize a clear title whitespace/type-block/layout zone instead of covering the canvas with garbled lettering.",
+    ].filter(Boolean).join("\n");
+  }
+
+  if (language === "ko") {
+    const base = [
+      `제목: ${salesPackage.title}`,
+      salesPackage.intro ? `소개: ${salesPackage.intro}` : "",
+      salesPackage.sellingPoints.length > 0 ? `판매 포인트: ${salesPackage.sellingPoints.join("; ")}` : "",
+      salesPackage.coverPrompt ? `사용자 비주얼 요구: ${salesPackage.coverPrompt}` : "",
+    ].filter(Boolean);
+
+    if (mode === "generic") {
+      return [
+        "사용자가 제공한 제목, 소개, 판매 포인트, 비주얼 요구를 바탕으로 커버 이미지를 생성하세요.",
+        ...base,
+      ].join("\n");
+    }
+
+    return [
+      "한국어 단편소설을 위한 모바일 세로형 책 표지를 생성하세요, 3:4 세로.",
+      ...base.map((line) => line.replace(/^제목: /u, "주 제목: ").replace(/^사용자 비주얼 요구: /u, "패키징 메모: ")),
+      "",
+      "커버 방향: 플랫폼 단편소설 책 표지이며 영화 포스터가 아닙니다. 제목 타이포그래피가 주 비주얼입니다. 두세 줄의 큰 활자 영역을 확보하세요. 캐릭터는 클로즈업이나 반신으로, 표정은 냉소, 충격, 무너짐, 위협, 복수심 같은 강한 감정이 담겨야 합니다. 소품은 적지만 크게 해서 갈등이 한눈에 보이게 하세요.",
+      "핸드폰 목록 썸네일로 읽히는 고대비, 고채도 색상. 사실적인 회사 사진, 가로형 영상 썸네일, 잡지 에디토리얼, 가는 세리프 활자, 긴 문단을 피하세요.",
+      "모델의 텍스트 렌더링이 불안정하면, 캔버스를 깨진 활자로 덮는 대신 제목 공백/타입 블록/레이아웃 영역을 명확히 우선시하세요.",
     ].filter(Boolean).join("\n");
   }
 

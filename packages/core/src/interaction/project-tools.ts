@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+﻿import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type {
   InteractionEvent,
@@ -87,7 +87,7 @@ function buildBookConfig(input: {
   readonly title: string;
   readonly genre?: string;
   readonly platform?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly chapterWordCount?: number;
   readonly targetChapters?: number;
 }): BookConfig {
@@ -99,7 +99,7 @@ function buildBookConfig(input: {
     genre: input.genre ?? "other",
     status: "outlining",
     targetChapters: input.targetChapters ?? 200,
-    chapterWordCount: input.chapterWordCount ?? defaultChapterLength(input.language === "en" ? "en" : "zh"),
+    chapterWordCount: input.chapterWordCount ?? defaultChapterLength(input.language === "en" ? "en" : input.language === "ko" ? "ko" : "zh"),
     ...(input.language ? { language: input.language } : {}),
     createdAt: now,
     updatedAt: now,

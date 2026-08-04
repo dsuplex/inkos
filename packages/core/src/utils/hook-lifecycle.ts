@@ -1,4 +1,4 @@
-import type { HookPayoffTiming } from "../models/runtime-state.js";
+﻿import type { HookPayoffTiming } from "../models/runtime-state.js";
 import type { StoredHook } from "../state/memory-db.js";
 import {
   HOOK_ACTIVITY_THRESHOLDS,
@@ -63,7 +63,7 @@ export function isHookWithinChapterWindow(
   return hook.startChapter > chapterNumber && hook.startChapter <= chapterNumber + lookahead;
 }
 
-const LABELS: Record<"zh" | "en", Record<HookPayoffTiming, string>> = {
+const LABELS: Record<"zh" | "ko" | "en", Record<HookPayoffTiming, string>> = {
   en: {
     immediate: "immediate",
     "near-term": "near-term",
@@ -78,22 +78,29 @@ const LABELS: Record<"zh" | "en", Record<HookPayoffTiming, string>> = {
     "slow-burn": "慢烧",
     endgame: "终局",
   },
+  ko: {
+    immediate: "즉시",
+    "near-term": "근시일",
+    "mid-arc": "중반전",
+    "slow-burn": "장기전",
+    endgame: "종반전",
+  },
 };
 
 const TIMING_ALIASES: Array<[HookPayoffTiming, RegExp]> = [
-  ["immediate", /^(?:立即|马上|当章|本章|下一章|immediate|instant|next(?:\s+chapter|\s+beat)?|right\s+away)$/i],
-  ["near-term", /^(?:近期|近几章|短线|soon|short(?:\s+run)?|near(?:\s*-\s*|\s+)term|current\s+sequence)$/i],
-  ["mid-arc", /^(?:中程|中期|卷中|mid(?:\s*-\s*|\s+)arc|mid(?:\s*-\s*|\s+)book|middle)$/i],
-  ["slow-burn", /^(?:慢烧|长线|后续|later|late(?:r)?|long(?:\s*-\s*|\s+)arc|slow(?:\s*-\s*|\s+)burn)$/i],
-  ["endgame", /^(?:终局|终章|大结局|最终|climax|finale|endgame|late\s+book)$/i],
+  ["immediate", /^(?:立即|马上|当章|本章|下一章|immediate|instant|next(?:\s+chapter|\s+beat)?|right\s+away|즉시|곧바로|바로|다음 장)$/i],
+  ["near-term", /^(?:近期|近几章|短线|soon|short(?:\s+run)?|near(?:\s*-\s*|\s+)term|current\s+sequence|근시일|곧|근황|가까운 장래)$/i],
+  ["mid-arc", /^(?:中程|中期|卷中|mid(?:\s*-\s*|\s+)arc|mid(?:\s*-\s*|\s+)book|middle|중반전|중반부)$/i],
+  ["slow-burn", /^(?:慢烧|长线|后续|later|late(?:r)?|long(?:\s*-\s*|\s+)arc|slow(?:\s*-\s*|\s+)burn|장기전|장기|서서히)$/i],
+  ["endgame", /^(?:终局|终章|大结局|最终|climax|finale|endgame|late\s+book|종반전|결말|최종)$/i],
 ];
 
 const SIGNAL_PATTERNS: Array<[HookPayoffTiming, RegExp]> = [
-  ["endgame", /(终局|终章|大结局|最终揭晓|最终摊牌|climax|finale|endgame|final reveal|last act)/i],
-  ["immediate", /(当章|本章|下一章|马上|立刻|即刻|immediate|next chapter|right away|at once)/i],
-  ["near-term", /(近期|近几章|很快|短线|soon|near-term|short run|current sequence)/i],
-  ["mid-arc", /(中期|卷中|本卷中段|mid-book|mid arc|middle of the arc)/i],
-  ["slow-burn", /(长线|慢烧|后续发酵|慢慢揭开|later|slow burn|long arc|long tail)/i],
+  ["endgame", /(终局|终章|大结局|最终揭晓|最终摊牌|climax|finale|endgame|final reveal|last act|종반전|결말|최종 공개|마지막)/i],
+  ["immediate", /(当章|本章|下一章|马上|立刻|即刻|immediate|next chapter|right away|at once|즉시|바로 다음|곧바로|당장)/i],
+  ["near-term", /(近期|近几章|很快|短线|soon|near-term|short run|current sequence|근시일|곧|가까운 장래)/i],
+  ["mid-arc", /(中期|卷中|本卷中段|mid-book|mid arc|middle of the arc|중반전|중반부|본권 중반)/i],
+  ["slow-burn", /(长线|慢烧|后续发酵|慢慢揭开|later|slow burn|long arc|long tail|장기전|장기|서서히|천천히)/i],
 ];
 
 export function normalizeHookPayoffTiming(value: string | undefined | null): HookPayoffTiming | undefined {
@@ -142,7 +149,7 @@ export function resolveHookPayoffTiming(params: {
 
 export function localizeHookPayoffTiming(
   timing: HookPayoffTiming,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): string {
   return LABELS[language][timing];
 }

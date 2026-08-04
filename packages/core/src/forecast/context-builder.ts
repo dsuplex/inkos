@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+﻿import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { formatRecentSummaries, readSubplotBoard } from "../agents/planner-context.js";
@@ -26,7 +26,7 @@ export interface ForecastContextSections {
 export interface ForecastContext {
   readonly bookId: string;
   readonly bookTitle: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly baseChapter: number;
   readonly contextFingerprint: string;
   readonly sections: ForecastContextSections;
@@ -173,23 +173,27 @@ async function readIfExists(path: string): Promise<string | null> {
 }
 
 export function renderForecastContextMarkdown(context: ForecastContext): string {
-  const zh = context.language === "zh";
+  const isZh = context.language === "zh";
+  const isKo = context.language === "ko";
+  const isEn = context.language === "en";
   const sectionList: ReadonlyArray<readonly [string, string]> = [
-    [zh ? "作者意图" : "Author intent", context.sections.authorIntent],
-    [zh ? "当前聚焦" : "Current focus", context.sections.currentFocus],
-    [zh ? "当前状态" : "Current state", context.sections.currentState],
-    [zh ? "伏笔与钩子" : "Pending hooks", context.sections.pendingHooks],
-    [zh ? "故事框架" : "Story frame", context.sections.storyFrame],
-    [zh ? "卷映射" : "Volume map", context.sections.volumeMap],
-    [zh ? "近期章节摘要" : "Recent chapter summaries", context.sections.recentChapterSummaries],
-    [zh ? "人物与关系" : "Characters and relationships", context.sections.characterContext],
-    [zh ? "支线看板" : "Subplot board", context.sections.subplotBoard],
+    [isEn ? "Author intent" : isKo ? "작가 의도" : "作者意图", context.sections.authorIntent],
+    [isEn ? "Current focus" : isKo ? "현재 초점" : "当前聚焦", context.sections.currentFocus],
+    [isEn ? "Current state" : isKo ? "현재 상태" : "当前状态", context.sections.currentState],
+    [isEn ? "Pending hooks" : isKo ? "대기 훅" : "伏笔与钩子", context.sections.pendingHooks],
+    [isEn ? "Story frame" : isKo ? "이야기 뼈대" : "故事框架", context.sections.storyFrame],
+    [isEn ? "Volume map" : isKo ? "권 지도" : "卷映射", context.sections.volumeMap],
+    [isEn ? "Recent chapter summaries" : isKo ? "최근 장 요약" : "近期章节摘要", context.sections.recentChapterSummaries],
+    [isEn ? "Characters and relationships" : isKo ? "인물과 관계" : "人物与关系", context.sections.characterContext],
+    [isEn ? "Subplot board" : isKo ? "지선 보드" : "支线看板", context.sections.subplotBoard],
   ];
 
   const blocks = [
-    zh
-      ? `# 正史上下文（《${context.bookTitle}》，已完成至第 ${context.baseChapter} 章）`
-      : `# Canonical context ("${context.bookTitle}", written through chapter ${context.baseChapter})`,
+    isEn
+      ? `# Canonical context ("${context.bookTitle}", written through chapter ${context.baseChapter})`
+      : isKo
+        ? `# 정사 문맥 ("${context.bookTitle}", ${context.baseChapter}장까지 작성됨)`
+        : `# 正史上下文（《${context.bookTitle}》，已完成至第 ${context.baseChapter} 章）`,
     ...sectionList
       .filter(([, content]) => content.trim())
       .map(([heading, content]) => `## ${heading}\n\n${content.trim()}`),
@@ -197,13 +201,13 @@ export function renderForecastContextMarkdown(context: ForecastContext): string 
   return blocks.join("\n\n");
 }
 
-async function readBookConfig(bookDir: string): Promise<{ readonly title: string; readonly language: "zh" | "en" }> {
+async function readBookConfig(bookDir: string): Promise<{ readonly title: string; readonly language: "zh" | "ko" | "en" }> {
   try {
     const raw = await readFile(join(bookDir, "book.json"), "utf-8");
     const parsed = JSON.parse(raw) as { title?: unknown; language?: unknown };
     return {
       title: typeof parsed.title === "string" ? parsed.title : "",
-      language: parsed.language === "en" ? "en" : "zh",
+      language: parsed.language === "en" ? "en" : parsed.language === "ko" ? "ko" : "zh",
     };
   } catch {
     return { title: "", language: "zh" };

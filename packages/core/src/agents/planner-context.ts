@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+﻿import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { parseMarkdownTableRows } from "../utils/story-markdown.js";
 import { readCharacterContext } from "../utils/outline-paths.js";
@@ -98,6 +98,7 @@ export function formatRecentSummaries(
   chapterSummariesRaw: string,
   chapterNumber: number,
   limit: number,
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
   const rows = parseMarkdownTableRows(chapterSummariesRaw)
     .filter((row) => /^\d+$/.test(row[0] ?? ""))
@@ -106,11 +107,27 @@ export function formatRecentSummaries(
 
   const recent = rows.slice(-limit);
   if (recent.length === 0) {
+    if (language === "en") {
+      return "(no prior chapter summaries)";
+    }
+    if (language === "ko") {
+      return "(이전 장 요약 없음)";
+    }
     return "（暂无前章摘要）";
   }
 
-  const header = "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |";
-  const divider = "| --- | --- | --- | --- | --- | --- | --- | --- |";
+  let header: string;
+  let divider: string;
+  if (language === "en") {
+    header = "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |";
+    divider = "| --- | --- | --- | --- | --- | --- | --- | --- |";
+  } else if (language === "ko") {
+    header = "| 장 | 제목 | 출현 인물 | 핵심 사건 | 상태 변화 | 훅 동태 | 감정 기조 | 장 유형 |";
+    divider = "| --- | --- | --- | --- | --- | --- | --- | --- |";
+  } else {
+    header = "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |";
+    divider = "| --- | --- | --- | --- | --- | --- | --- | --- |";
+  }
   const body = recent.map((row) => `| ${row.join(" | ")} |`).join("\n");
   return [header, divider, body].join("\n");
 }
@@ -124,18 +141,27 @@ export function composeCurrentArcProse(
   subplotBoardRaw: string,
   emotionalArcsRaw: string,
   chapterNumber: number,
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
   const activeSubplots = extractActiveSubplotLines(subplotBoardRaw);
   const recentArcs = extractRecentEmotionalArcLines(emotionalArcsRaw, chapterNumber, 3);
 
   const parts: string[] = [];
   if (activeSubplots.length > 0) {
-    parts.push("活跃支线：\n" + activeSubplots.map((line) => `- ${line}`).join("\n"));
+    const label = language === "en" ? "Active subplots:" : language === "ko" ? "활성 지선:" : "活跃支线：";
+    parts.push(`${label}\n` + activeSubplots.map((line) => `- ${line}`).join("\n"));
   }
   if (recentArcs.length > 0) {
-    parts.push("近期情感线：\n" + recentArcs.map((line) => `- ${line}`).join("\n"));
+    const label = language === "en" ? "Recent emotional arcs:" : language === "ko" ? "최근 감정 라인:" : "近期情感线：";
+    parts.push(`${label}\n` + recentArcs.map((line) => `- ${line}`).join("\n"));
   }
   if (parts.length === 0) {
+    if (language === "en") {
+      return "(no arc data yet — possibly early in a new book)";
+    }
+    if (language === "ko") {
+      return "(아직 arc 데이터 없음 — 새 책 초기 단계일 수 있음)";
+    }
     return "（暂无 arc 数据——可能是新书起始阶段）";
   }
   return parts.join("\n\n");
@@ -195,7 +221,7 @@ function isLikelyHeaderRow(row: ReadonlyArray<string>): boolean {
  * explicit match is found — that row is almost always the protagonist by
  * convention.
  */
-export function extractProtagonistRow(characterMatrixRaw: string): string {
+export function extractProtagonistRow(characterMatrixRaw: string, language: "zh" | "ko" | "en" = "zh"): string {
   const rows = parseMarkdownTableRows(characterMatrixRaw);
   const protagonist = rows.find((row) =>
     row.some((cell) => /^(主角本人|主角|protagonist)$/i.test(cell.trim())),
@@ -207,18 +233,30 @@ export function extractProtagonistRow(characterMatrixRaw: string): string {
   if (firstDataRow) {
     return `| ${firstDataRow.join(" | ")} |`;
   }
+  if (language === "en") {
+    return "(protagonist row not found — check character_matrix.md)";
+  }
+  if (language === "ko") {
+    return "(주인공 행을 찾을 수 없음 — character_matrix.md 확인 필요)";
+  }
   return "（未找到主角行——请检查 character_matrix.md）";
 }
 
 const OPPONENT_PATTERNS = /敌对|对手|阻力|opponent|antagonist|foe/i;
 const COLLABORATOR_PATTERNS = /协力|盟友|临时助力|ally|collaborator|mentor/i;
 
-export function extractOpponentRows(characterMatrixRaw: string, limit: number): string {
-  return extractRowsByRelation(characterMatrixRaw, OPPONENT_PATTERNS, limit, "（暂无明确对手登场）");
+export function extractOpponentRows(characterMatrixRaw: string, limit: number, language: "zh" | "ko" | "en" = "zh"): string {
+  return extractRowsByRelation(characterMatrixRaw, OPPONENT_PATTERNS, limit,
+    language === "en" ? "(no clear opponent appeared yet)"
+    : language === "ko" ? "(아직 명확한 상대 미등장)"
+    : "（暂无明确对手登场）", language);
 }
 
-export function extractCollaboratorRows(characterMatrixRaw: string, limit: number): string {
-  return extractRowsByRelation(characterMatrixRaw, COLLABORATOR_PATTERNS, limit, "（暂无明确协作者登场）");
+export function extractCollaboratorRows(characterMatrixRaw: string, limit: number, language: "zh" | "ko" | "en" = "zh"): string {
+  return extractRowsByRelation(characterMatrixRaw, COLLABORATOR_PATTERNS, limit,
+    language === "en" ? "(no clear collaborator appeared yet)"
+    : language === "ko" ? "(아직 명확한 협력자 미등장)"
+    : "（暂无明确协作者登场）", language);
 }
 
 function extractRowsByRelation(
@@ -226,6 +264,7 @@ function extractRowsByRelation(
   pattern: RegExp,
   limit: number,
   emptyText: string,
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
   const rows = parseMarkdownTableRows(characterMatrixRaw)
     .filter((row) => row.some((cell) => pattern.test(cell)))
@@ -240,7 +279,7 @@ function extractRowsByRelation(
 const RELEVANT_THREAD_STATUS_PATTERN = /activat|partial_payoff|推进|高压|open|progress/i;
 const STALE_STATUS_PATTERN = /resolved|deferred|dormant|暂稳待续|暂挂|已回收/i;
 
-export function extractRelevantThreads(pendingHooksRaw: string, subplotBoardRaw: string): string {
+export function extractRelevantThreads(pendingHooksRaw: string, subplotBoardRaw: string, language: "zh" | "ko" | "en" = "zh"): string {
   const hookRows = parseMarkdownTableRows(pendingHooksRaw)
     .filter((row) => !/^(hook_id)$/i.test(row[0] ?? ""))
     .filter((row) => row.some((cell) => RELEVANT_THREAD_STATUS_PATTERN.test(cell)))
@@ -255,6 +294,12 @@ export function extractRelevantThreads(pendingHooksRaw: string, subplotBoardRaw:
 
   const lines = [...hookRows, ...subplotRows];
   if (lines.length === 0) {
+    if (language === "en") {
+      return "(no active threads)";
+    }
+    if (language === "ko") {
+      return "(활성 실마리 없음)";
+    }
     return "（暂无活跃线索）";
   }
   return lines.join("\n");
@@ -271,12 +316,16 @@ export function extractRelevantThreads(pendingHooksRaw: string, subplotBoardRaw:
 export function formatRecyclableHooks(
   hooks: ReadonlyArray<StoredHook>,
   chapterNumber: number,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
   if (hooks.length === 0) {
-    return language === "en"
-      ? "(no stale hooks — the ledger is clean)"
-      : "（暂无陈旧 hook——账本干净）";
+    if (language === "en") {
+      return "(no stale hooks — the ledger is clean)";
+    }
+    if (language === "ko") {
+      return "(낡은 훅 없음 — 장부 깨끗함)";
+    }
+    return "（暂无陈旧 hook——账本干净）";
   }
 
   const topSlice = hooks.slice(0, 6);
@@ -284,14 +333,22 @@ export function formatRecyclableHooks(
     const lastTouch = Math.max(hook.startChapter, hook.lastAdvancedChapter);
     const silence = lastTouch <= 0 ? chapterNumber : Math.max(0, chapterNumber - lastTouch);
     const payoff = hook.expectedPayoff?.trim() || hook.notes?.trim() || "";
-    const core = hook.coreHook === true ? (language === "en" ? " [core]" : " [核心]") : "";
-    return language === "en"
-      ? `- ${hook.hookId} "${payoff}" — status=${hook.status}, silent ${silence} ch${core}`
-      : `- ${hook.hookId} "${payoff}" — 状态=${hook.status}，已沉默 ${silence} 章${core}`;
+    const core = hook.coreHook === true
+      ? (language === "en" ? " [core]" : language === "ko" ? " [핵심]" : " [核心]")
+      : "";
+    if (language === "en") {
+      return `- ${hook.hookId} "${payoff}" — status=${hook.status}, silent ${silence} ch${core}`;
+    }
+    if (language === "ko") {
+      return `- ${hook.hookId} "${payoff}" — 상태=${hook.status}, 침묵 ${silence}장${core}`;
+    }
+    return `- ${hook.hookId} "${payoff}" — 状态=${hook.status}，已沉默 ${silence} 章${core}`;
   });
 
   const header = language === "en"
     ? "The planner MUST place each of these under advance / resolve / defer in the hook ledger (deferring requires an explicit reason):"
-    : "规划时必须把以下每个 hook 放入 advance / resolve / defer（若 defer，必须写出理由）：";
+    : language === "ko"
+      ? "기획자는 다음 각각을 advance / resolve / defer 중 하나에 반드시 넣어야 합니다 (defer 시 명시적 이유 필수):"
+      : "规划时必须把以下每个 hook 放入 advance / resolve / defer（若 defer，必须写出理由）：";
   return [header, ...lines].join("\n");
 }

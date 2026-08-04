@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, readdir, rm, stat, unlink, open } from "node:fs/promises";
+﻿import { readFile, writeFile, mkdir, readdir, rm, stat, unlink, open } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join, resolve } from "node:path";
 import type { BookConfig } from "../models/book.js";
@@ -46,13 +46,13 @@ export class BookWriteLockError extends Error {
 export class StateManager {
   constructor(private readonly projectRoot: string) {}
 
-  private static defaultAuthorIntent(language: "zh" | "en"): string {
+  private static defaultAuthorIntent(language: "zh" | "ko" | "en"): string {
     return language === "zh"
       ? "# 作者意图\n\n（在这里描述这本书的长期创作方向。）\n"
       : "# Author Intent\n\n(Describe the long-horizon vision for this book here.)\n";
   }
 
-  private static defaultCurrentFocus(language: "zh" | "en"): string {
+  private static defaultCurrentFocus(language: "zh" | "ko" | "en"): string {
     return language === "zh"
       ? "# 当前聚焦\n\n## 当前重点\n\n（描述接下来 1-3 章最需要优先推进的内容。）\n"
       : "# Current Focus\n\n## Active Focus\n\n(Describe what the next 1-3 chapters should prioritize.)\n";
@@ -65,7 +65,7 @@ export class StateManager {
 
   async ensureControlDocumentsAt(
     bookDir: string,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
     authorIntent?: string,
   ): Promise<void> {
     const storyDir = join(bookDir, "story");
@@ -123,7 +123,7 @@ export class StateManager {
     return { authorIntent, currentFocus, runtimeDir };
   }
 
-  private async resolveControlDocumentLanguage(bookId: string): Promise<"zh" | "en"> {
+  private async resolveControlDocumentLanguage(bookId: string): Promise<"zh" | "ko" | "en"> {
     try {
       const raw = await readFile(join(this.bookDir(bookId), "book.json"), "utf-8");
       const parsed = JSON.parse(raw) as { language?: unknown };

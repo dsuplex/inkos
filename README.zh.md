@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="README.en.md">English</a> | <a href="README.ko.md">한국어</a> | <a href="README.zh.md">中文</a> | <a href="README.ja.md">日本語</a>
+  <a href="README.en.md">English</a> | <a href="README.ko.md">한국어</a> | 中文 | <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@ InkOS 是一个面向故事创作与多语言翻译的 AI Agent 系统：长篇�
 
 **InkOS Studio 已支持 Moonshot（Kimi）。前往 Kimi 开放平台（[中文站](https://platform.kimi.com/?aff=inkos)｜[Global](https://platform.kimi.ai/?aff=inkos)）获取 API Key，即可开始创作。**
 
-> 💡 **写小说，先给 Agent 接一层专业数据** —— 写小说不只缺模型，更缺素材。推荐搭配 [**火花数据API（huohuaapi）**](https://huohuaapi.com/)：按调用计费的小说 / 网文创作数据，让 Agent 动笔前先查小说正文、章节结构、人物设定、文风和创作方法等带来源素材，而不是只靠 Prompt 硬凑一份“剧情提纲”。
+> 💡 **写小说，先给 Agent 接一层专业数据** —— 写小说不只缺模型，更缺素材。推荐搭配 [**火花数据API（huohuaapi）**](https://huohuaapi.com/)：按调用计费的小说 / 网文创作数据，让 Agent 动笔前先查小说正文、章节结构、人物设定、文风和创作方法等带来源素材，而不是只靠 Prompt 硬凑一份"剧情提纲"。
 
 ## v1.7 - 多语言创作、剧情推演与不中断协作
 
@@ -79,7 +79,7 @@ InkOS Play 发布和 Studio 体验升级：你可以用一句自然语言创建�
 
 - **InkOS Play**：新增开放世界与分支互动。支持自由动作、可点击选择、世界契约、非固定时间推进、角色 agent、物品 / 证据 / 关系状态、HUD 和自动配图。
 - **Studio UX**：开始创作、我的创作、会话记录、查看世界、配图与生成物预览都重新整理，Play 可以像文字游戏一样滚动游玩，而不是藏在命令行里。
-- **记忆与上下文**：长篇和互动世界都开始进入“按任务取上下文”的模式。故事状态、Markdown 投影、SQLite 记忆、会话摘要和 protected / compressible 语义压缩共同工作，降低旧历史淹没当前指令的问题。
+- **记忆与上下文**：长篇和互动世界都开始进入"按任务取上下文"的模式。故事状态、Markdown 投影、SQLite 记忆、会话摘要和 protected / compressible 语义压缩共同工作，降低旧历史淹没当前指令的问题。
 - **指令遵循**：Studio Chat、TUI 和 CLI 的自然语言入口统一到 action surface。普通讨论、确认建书、短篇、封面、Play、长篇写章和重写续写不再靠散落关键词抢跑，重动作先确认，完成态来自真实工具结果。
 - **创作入口**：长篇、短篇、同人、番外、仿写、续写、封面制作和开放世界都成为 Studio 的一等入口。
 - **模型与错误边界**：弱模型格式不稳时更少直接崩溃；模型服务错误、InkOS 执行错误和图片生成错误会更清楚地区分，方便判断是配置、供应商还是系统问题。
@@ -88,7 +88,7 @@ InkOS Play 发布和 Studio 体验升级：你可以用一句自然语言创建�
   <img src="assets/studio-play-1-5.png" width="900" alt="InkOS Play Studio 开放世界界面">
 </p>
 
-**长篇小说** — 从创作简报建书，生成世界观、角色、卷纲、章节意图，按“写作 → 审稿 → 必要修订 → 状态结算”推进。上下文按 protected / compressible 分层组织，避免长书越写越乱。
+**长篇小说** — 从创作简报建书，生成世界观、角色、卷纲、章节意图，按"写作 → 审稿 → 必要修订 → 状态结算"推进。上下文按 protected / compressible 分层组织，避免长书越写越乱。
 
 **剧情多线推演** — 在写下一章前，基于当前正史生成 2-5 条彼此隔离的未来分支，并在 Studio Chat 中横向比较章节节拍、人物决定、预计变化、风险和作者意图匹配度。采用分支只会保存 `selected-branch-plan.md` 候选计划，不会修改正文、大纲或正史状态；正史变化后旧推演会标记为过期。
 
@@ -283,7 +283,7 @@ inkos doctor
 - **Provider bank 能力表**：内置 Google Gemini、Moonshot、MiniMax、智谱、百炼、DeepSeek、硅基流动、火山、腾讯混元、文心、讯飞星火、OpenRouter、kkaiapi、Ollama、CodingPlan 等服务的 baseUrl、协议、模型和兼容策略。
 - **模型归属校验**：`--service google --model kimi-k2.5` 这类错配会直接报错，避免把请求发到错误服务商。
 - **Google Gemini 兼容修复**：AI Studio API Key 可直接用于 Gemini OpenAI-compatible endpoint，InkOS 会自动禁用 Google 不支持的 OpenAI `store` 参数。
-- **MiniMax transport 探测**：MiniMax / MiniMax CodingPlan 使用官方 OpenAI-compatible `/v1` 入口，并自动使用可工作的非流式 transport，规避流式 usage 正常但正文为空的问题。
+- **MiniMax transport 探测**：MiniMax / MiniMax CodingPlan 使用官方 OpenAI-compatible `/v1` 入口，并自动使用可工作的非流式 transport，规避流式返回 usage 但无正文的问题。
 - **旧 env 兼容**：老的 `INKOS_LLM_BASE_URL + INKOS_LLM_MODEL + INKOS_LLM_API_KEY` 仍可用于 CLI；没有 `INKOS_LLM_SERVICE` 时会尝试从 baseUrl 反推服务商。
 
 ### 当前交互入口
@@ -337,8 +337,7 @@ inkos short run \
 
 封面工具会独立生成 `covers/<标题>/cover-prompt.md` 和 `covers/<标题>/cover.png`。如果还没有配置封面服务，先在 Studio 的模型配置里设置封面服务和 API Key。
 
-生成后也可以继续通过 chat 改封面提示词，例如“把人物拉近一点、标题字更大、表情更冷笑”。系统会用新的 `coverPrompt` 重写 `cover-prompt.md` 并重生成封面，不需要重新写短篇。
-
+生成后也可以继续通过 chat 改封面提示词，例如"把人物拉近一点、标题字更大、表情更冷笑"。系统会用新的 `coverPrompt` 重写 `cover-prompt.md` 并重生成封面，不需要重新写短篇。
 
 
 ### 启动开放世界 / 分支互动
@@ -440,7 +439,7 @@ InkOS 现在有两条主要运行线：长篇 / 短篇生产线负责生成可�
   <img src="assets/arch-system.svg" width="900" alt="InkOS 整体系统架构">
 </p>
 
-长篇每一章默认按“规划 → 编排 → 写作 → 审计 → 必要修订 → 状态同步”运行：
+长篇每一章默认按"规划 → 编排 → 写作 → 审计 → 必要修订 → 状态同步"运行：
 
 <p align="center">
   <img src="assets/arch-pipeline.svg" width="900" alt="InkOS 章节生产管线">
@@ -487,7 +486,7 @@ Node 22+ 环境下自动启用 SQLite 时序记忆数据库（`story/memory.db`�
 
 ### 控制面与运行时产物
 
-除了运行时状态，InkOS 还把“护栏”和“自定义”拆成可审阅的控制层：
+除了运行时状态，InkOS 还把"护栏"和"自定义"拆成可审阅的控制层：
 
 - `story/author_intent.md`：长期作者意图
 - `story/current_focus.md`：当前阶段的关注点
@@ -549,7 +548,7 @@ Agent 模式暴露的是按场景收窄后的工具集：建书、读写控制�
 
 ### 4. Studio Play 模式
 
-Studio 里的「开放世界」和「分支互动」是交互式创作入口。它们不要求你先建书，也不要求写死 RPG 数值。你可以描述“世界怎样运行、时间怎样推进、角色是否自主行动、物品和证据怎样影响故事”，系统会生成可继续玩的世界，并把每回合状态写回本地。
+Studio 里的「开放世界」和「分支互动」是交互式创作入口。它们不要求你先建书，也不要求写死 RPG 数值。你可以描述"世界怎样运行、时间怎样推进、角色是否自主行动、物品和证据怎样影响故事"，系统会生成可继续玩的世界，并把每回合状态写回本地。
 
 ## Studio 实测截图与生成结果
 
@@ -659,11 +658,11 @@ pnpm typecheck    # 类型检查
 ## Star History
 
 <a href="https://www.star-history.com/#Narcooo/inkos&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Narcooo/inkos&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Narcooo/inkos&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Narcooo/inkos&type=date&legend=top-left" />
- </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Narcooo/inkos&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Narcooo/inkos&type=date&theme=light&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Narcooo/inkos&type=date&legend=top-left" />
+  </picture>
 </a>
 
 

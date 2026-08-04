@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Phase 7 — stale / blocked hook detection.
  *
  * Runs per-chapter (called from the writer's runtime-state projection
@@ -142,13 +142,15 @@ export function computeHookDiagnostics(params: {
  */
 export function renderHookDiagnosticMarker(
   diagnostics: HookDiagnostics,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): string {
   const tokens: string[] = [];
   if (diagnostics.stale) {
     tokens.push(language === "en"
       ? `stale (d=${diagnostics.distance}/half=${diagnostics.halfLife})`
-      : `过期 (距=${diagnostics.distance}/半衰=${diagnostics.halfLife})`);
+      : language === "ko"
+        ? `오래됨 (거리=${diagnostics.distance}/반감기=${diagnostics.halfLife})`
+        : `过期 (距=${diagnostics.distance}/半衰=${diagnostics.halfLife})`);
   }
   if (diagnostics.blocked) {
     const missing = diagnostics.missingUpstream.join(", ");
@@ -158,11 +160,15 @@ export function renderHookDiagnosticMarker(
     const distanceToken = diagnostics.blockedDistance > 0
       ? (language === "en"
         ? ` (blocked ${diagnostics.blockedDistance} chapters)`
-        : ` (已阻 ${diagnostics.blockedDistance} 章)`)
+        : language === "ko"
+          ? ` (차단 ${diagnostics.blockedDistance}장)`
+          : ` (已阻 ${diagnostics.blockedDistance} 章)`)
       : "";
     tokens.push(language === "en"
       ? `blocked on ${missing}${distanceToken}`
-      : `受阻于 ${missing}${distanceToken}`);
+      : language === "ko"
+        ? `다음에 막힘: ${missing}${distanceToken}`
+        : `受阻于 ${missing}${distanceToken}`);
   }
   return tokens.join("; ");
 }

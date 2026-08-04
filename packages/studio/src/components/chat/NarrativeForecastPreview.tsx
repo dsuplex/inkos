@@ -76,20 +76,24 @@ export function getNarrativeForecastPreviewDetails(exec: ToolExecution): Narrati
 export function buildNarrativeForecastSelectionInstruction(
   forecastId: string,
   branchId: string,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): string {
   return language === "zh"
     ? `请调用 select_narrative_branch，选择推演 ${forecastId} 的 ${branchId}。只保存候选计划，不修改正文、大纲或正史状态。`
-    : `Call select_narrative_branch for ${branchId} in forecast ${forecastId}. Save only the candidate plan; do not modify prose, outlines, or canonical state.`;
+    : language === "ko"
+      ? `select_narrative_branch를 호출하여 추론 ${forecastId}의 ${branchId}을(를) 선택하세요. 후보 계획만 저장하고 본문, 개요 또는 정사 상태는 수정하지 마십시오.`
+      : `Call select_narrative_branch for ${branchId} in forecast ${forecastId}. Save only the candidate plan; do not modify prose, outlines, or canonical state.`;
 }
 
 export function buildNarrativeForecastRecheckInstruction(
   forecastId: string,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): string {
   return language === "zh"
     ? `请调用 get_narrative_forecast，重新核验推演 ${forecastId} 是否已经过期。`
-    : `Call get_narrative_forecast for forecast ${forecastId} and report whether it is stale.`;
+    : language === "ko"
+      ? `get_narrative_forecast를 호출하여 추론 ${forecastId}가 만료되었는지 다시 확인하세요.`
+      : `Call get_narrative_forecast for forecast ${forecastId} and report whether it is stale.`;
 }
 
 const RISK_LABELS: Record<ForecastRisk["kind"], readonly [string, string]> = {

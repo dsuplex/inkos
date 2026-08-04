@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Style fingerprint analysis — pure text analysis (no LLM).
  * Extracts statistical features from reference text to build a StyleProfile.
  */
@@ -23,6 +23,14 @@ const EN_RHETORICAL_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re
   { name: "short punchy rhythm", regex: /[.!?]\s+[A-Z][^.!?]{1,24}[.!?]/g },
 ];
 
+// Common rhetorical patterns in Korean fiction
+const KO_RHETORICAL_PATTERNS: ReadonlyArray<{ readonly name: string; readonly regex: RegExp }> = [
+  { name: "비유(처럼/같이/마치)", regex: /(?:처럼|같이|마치).*?(?:같다|듯하다|보이다)/g },
+  { name: "반어/반문", regex: /어찌|어째서|어디|누가|무엇이.*?(?:아닐까|그렇지|없을까)/g },
+  { name: "도치법", regex: /[^.,!?]*[은는이가을를] [^.,!?]*[이다아니다]다[.!?]/g },
+  { name: "짧은 문장 리듬", regex: /[。！？][^。！？]{1,8}[。！？]/g },
+];
+
 /**
  * Analyze a reference text and extract its style profile.
  * The returned profile can be serialized to style_profile.json.
@@ -30,12 +38,13 @@ const EN_RHETORICAL_PATTERNS: ReadonlyArray<{ readonly name: string; readonly re
 export function analyzeStyle(
   text: string,
   sourceName?: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): StyleProfile {
   const isEn = language === "en";
+  const isKo = language === "ko";
 
   const sentences = text
-    .split(isEn ? /[.!?\n]+/ : /[。！？\n]/)
+    .split(isEn ? /[.!?\n]+/ : isKo ? /[。！？\n]/ : /[。！？\n]/)
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 
@@ -44,7 +53,7 @@ export function analyzeStyle(
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
 
-  // Measure length in the language's native unit: words for English, characters for Chinese.
+  // Measure length in the language's native unit: words for English, characters for Chinese/Korean.
   const measure = (s: string): number =>
     isEn ? (s.match(/[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?/g)?.length ?? 0) : s.replace(/\s+/g, "").length;
 
@@ -68,7 +77,7 @@ export function analyzeStyle(
   const minParagraph = paragraphLengths.length > 0 ? Math.min(...paragraphLengths) : 0;
   const maxParagraph = paragraphLengths.length > 0 ? Math.max(...paragraphLengths) : 0;
 
-  // Vocabulary diversity (TTR — Type-Token Ratio): word-level for English, character-level for Chinese.
+  // Vocabulary diversity (TTR — Type-Token Ratio): word-level for English, character-level for Chinese/Korean.
   let vocabularyDiversity: number;
   if (isEn) {
     const words = text.toLowerCase().match(/[a-z0-9]+(?:'[a-z0-9]+)?/g) ?? [];
@@ -78,7 +87,7 @@ export function analyzeStyle(
     vocabularyDiversity = chars.length > 0 ? new Set(chars).size / chars.length : 0;
   }
 
-  // Top sentence opening patterns: first word for English, first 2 chars for Chinese.
+  // Top sentence opening patterns: first word for English, first 2 chars for Chinese/Korean.
   const openingCounts: Record<string, number> = {};
   for (const s of sentences) {
     const key = isEn
@@ -90,15 +99,15 @@ export function analyzeStyle(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .filter(([, count]) => count >= 3)
-    .map(([pattern, count]) => (isEn ? `${pattern}… (${count})` : `${pattern}...(${count}次)`));
+    .map(([pattern, count]) => (isEn ? `${pattern}… (${count})` : `${pattern}...(${count}회)`));
 
   // Rhetorical features
-  const rhetoricalPatterns = isEn ? EN_RHETORICAL_PATTERNS : RHETORICAL_PATTERNS;
+  const rhetoricalPatterns = isEn ? EN_RHETORICAL_PATTERNS : isKo ? KO_RHETORICAL_PATTERNS : RHETORICAL_PATTERNS;
   const rhetoricalFeatures: string[] = [];
   for (const { name, regex } of rhetoricalPatterns) {
     const matches = text.match(regex);
     if (matches && matches.length >= 2) {
-      rhetoricalFeatures.push(isEn ? `${name} (${matches.length})` : `${name}(${matches.length}处)`);
+      rhetoricalFeatures.push(isEn ? `${name} (${matches.length})` : `${name}(${matches.length}곳)`);
     }
   }
 

@@ -1,4 +1,4 @@
-import { BaseAgent } from "./base.js";
+﻿import { BaseAgent } from "./base.js";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { readVolumeMap } from "../utils/outline-paths.js";
@@ -165,7 +165,7 @@ export class ConsolidatorAgent extends BaseAgent {
     const hooks = parsePendingHooksMarkdown(raw);
     if (hooks.length === 0) return 0;
 
-    const language: "zh" | "en" = /[\u4e00-\u9fff]/.test(raw) ? "zh" : "en";
+    const language: "zh" | "ko" | "en" = /[\uac00-\ud7af]/.test(raw) ? "ko" : /[\u4e00-\u9fff]/.test(raw) ? "zh" : "en";
     const summariesRaw = await readFile(join(storyDir, "chapter_summaries.md"), "utf-8").catch(() => "");
 
     const { rerunPromotionPass } = await import("../utils/hook-promotion.js");

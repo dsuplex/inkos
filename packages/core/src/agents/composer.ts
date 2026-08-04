@@ -1,4 +1,4 @@
-import { readFile, readdir, mkdir } from "node:fs/promises";
+﻿import { readFile, readdir, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { BaseAgent } from "./base.js";
 import type { BookConfig } from "../models/book.js";
@@ -41,7 +41,7 @@ export interface ContextBudget {
 export interface CompressibleContextCompileRequest {
   readonly chapterNumber: number;
   readonly goal: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly maxInputTokens: number;
   readonly protectedEntries: ContextPackage["selectedContext"];
   readonly compressibleEntries: ContextPackage["selectedContext"];
@@ -55,7 +55,7 @@ export interface OutlineSectionSelectionRequest {
   readonly chapterNumber: number;
   readonly goal: string;
   readonly outlineNode: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly candidates: ReadonlyArray<{
     readonly source: string;
     readonly heading: string;
@@ -135,7 +135,7 @@ async function applyContextBudgetIfNeeded(params: {
   readonly contextPackage: ContextPackage;
   readonly chapterNumber: number;
   readonly goal: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly contextBudget?: ContextBudget;
   readonly compiler?: CompressibleContextCompiler;
   readonly onContextCompression?: ContextCompressionCallback;
@@ -332,6 +332,7 @@ export class ComposerAgent extends BaseAgent {
       return request.candidates.map((candidate) => candidate.source);
     }
     const isEn = request.language === "en";
+    const isKo = request.language === "ko";
     const candidates = request.candidates.map((candidate, index) => [
       `#${index + 1} ${candidate.source}`,
       `heading: ${candidate.heading}`,
@@ -343,11 +344,17 @@ export class ComposerAgent extends BaseAgent {
           "Select only the outline sections needed for the current chapter. Prefer semantic relevance over keyword overlap.",
           "Return strict JSON only: {\"selectedSources\":[\"...\"]}. Use exact source ids from the candidates. If uncertain, include the safest relevant anchors rather than inventing ids.",
         ].join("\n")
-      : [
-          "你是 InkOS 的语义大纲选段器。",
-          "只选择当前章节真正需要的大纲段落。按语义相关性判断，不要按关键词重合机械选择。",
-          "只返回严格 JSON：{\"selectedSources\":[\"...\"]}。必须使用候选里的精确 source id；不确定时选最安全的相关锚点，不要编造 id。",
-        ].join("\n");
+      : isKo
+        ? [
+            "당신은 InkOS의 의미론적 대요-구간 선택기입니다.",
+            "현재 장에 진정으로 필요한 대요 구절만 선택하세요. 키워드 중복으로 기계적으로 선택하지 말고 의미적 연관성으로 판단하세요.",
+            "엄격한 JSON만 반환: {\"selectedSources\":[\"...\"]}. 후보들의 정확한 source id를 사용하세요. 불확실하면 가장 안전한 관련 앵커를 포함하되, id를 날조하지 마세요.",
+          ].join("\n")
+        : [
+            "你是 InkOS 的语义大纲选段器。",
+            "只选择当前章节真正需要的大纲段落。按语义相关性判断，不要按关键词重合机械选择。",
+            "只返回严格 JSON：{\"selectedSources\":[\"...\"]}。必须使用候选里的精确 source id；不确定时选最安全的相关锚点，不要编造 id。",
+          ].join("\n");
     const user = isEn
       ? [
           `File: ${request.fileName}`,
@@ -358,15 +365,25 @@ export class ComposerAgent extends BaseAgent {
           "Candidates:",
           candidates,
         ].join("\n")
-      : [
-          `文件：${request.fileName}`,
-          `章节：第${request.chapterNumber}章`,
-          `目标：${request.goal}`,
-          `大纲节点：${request.outlineNode}`,
-          "",
-          "候选段落：",
-          candidates,
-        ].join("\n");
+      : isKo
+        ? [
+            `파일: ${request.fileName}`,
+            `장: ${request.chapterNumber}장`,
+            `목표: ${request.goal}`,
+            `대요 노드: ${request.outlineNode}`,
+            "",
+            "후보 구간:",
+            candidates,
+          ].join("\n")
+        : [
+            `文件：${request.fileName}`,
+            `章节：第${request.chapterNumber}章`,
+            `目标：${request.goal}`,
+            `大纲节点：${request.outlineNode}`,
+            "",
+            "候选段落：",
+            candidates,
+          ].join("\n");
     const response = await this.chat([
       { role: "system", content: system },
       { role: "user", content: user },
@@ -380,6 +397,7 @@ export class ComposerAgent extends BaseAgent {
 
   async compileCompressibleContext(request: CompressibleContextCompileRequest): Promise<string> {
     const isEn = request.language === "en";
+    const isKo = request.language === "ko";
     const protectedBlock = renderContextEntries(request.protectedEntries);
     const compressibleBlock = renderContextEntries(request.compressibleEntries);
     const system = isEn
@@ -388,11 +406,17 @@ export class ComposerAgent extends BaseAgent {
           "Only compile the COMPRESSIBLE CONTEXT. The PROTECTED CONTEXT is binding reference material and must not be rewritten, summarized as a substitute, or weakened.",
           "Output concise Markdown with source pointers. Preserve names, unresolved promises, evidence, timing, and constraints that may affect the next chapter. Drop low-relevance noise.",
         ].join("\n")
-      : [
-          "你是 InkOS 的语义上下文编译器。",
-          "只能编译【可压缩上下文】。【受保护上下文】是绑定参照，不得改写、不得替代总结、不得削弱。",
-          "输出简洁 Markdown，保留来源指针。保留会影响下一章的人名、未兑现承诺、证据、时间点和约束，丢弃低相关噪声。",
-        ].join("\n");
+      : isKo
+        ? [
+            "당신은 InkOS의 의미론적 문맥 압축기입니다.",
+            "【압축 가능 문맥】만 컴파일하세요. 【보호 문맥】은 구속력 있는 참조 자료이므로, 다시 쓰거나 요약으로 대체하거나 약화시키지 마세요.",
+            "출처 표시가 있는 간결한 Markdown을 출력하세요. 다음 장에 영향을 줄 인명, 미해결 약속, 증거, 시점, 제약은 보존하세요. 저연관성 잡음은 버리세요.",
+          ].join("\n")
+        : [
+            "你是 InkOS 的语义上下文编译器。",
+            "只能编译【可压缩上下文】。【受保护上下文】是绑定参照，不得改写、不得替代总结、不得削弱。",
+            "输出简洁 Markdown，保留来源指针。保留会影响下一章的人名、未兑现承诺、证据、时间点和约束，丢弃低相关噪声。",
+          ].join("\n");
     const user = isEn
       ? [
           `Chapter: ${request.chapterNumber}`,
@@ -405,17 +429,29 @@ export class ComposerAgent extends BaseAgent {
           "## Compressible Context (compile this)",
           compressibleBlock || "(none)",
         ].join("\n")
-      : [
-          `章节：第${request.chapterNumber}章`,
-          `目标：${request.goal}`,
-          `压缩后目标预算：不超过 ${request.maxInputTokens} 估算输入 tokens`,
-          "",
-          "## 受保护上下文（只作为参照，不要编译它）",
-          protectedBlock || "（无）",
-          "",
-          "## 可压缩上下文（只编译这一部分）",
-          compressibleBlock || "（无）",
-        ].join("\n");
+      : isKo
+        ? [
+            `장: ${request.chapterNumber}장`,
+            `목표: ${request.goal}`,
+            `압축 후 목표 예산: ${request.maxInputTokens} 추정 입력 토큰 이하`,
+            "",
+            "## 보호 문맥(참조만, 컴파일하지 않음)",
+            protectedBlock || "(없음)",
+            "",
+            "## 압축 가능 문맥(이것만 컴파일)",
+            compressibleBlock || "(없음)",
+          ].join("\n")
+        : [
+            `章节：第${request.chapterNumber}章`,
+            `目标：${request.goal}`,
+            `压缩后目标预算：不超过 ${request.maxInputTokens} 估算输入 tokens`,
+            "",
+            "## 受保护上下文（只作为参照，不要编译它）",
+            protectedBlock || "（无）",
+            "",
+            "## 可压缩上下文（只编译这一部分）",
+            compressibleBlock || "（无）",
+          ].join("\n");
 
     const response = await this.chat([
       { role: "system", content: system },
@@ -442,7 +478,7 @@ export function contextBudgetFromClient(client: LLMClient): ContextBudget | unde
 async function collectSelectedContext(
   storyDir: string,
   plan: PlanChapterOutput,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
   outlineSectionSelector?: OutlineSectionSelector,
 ): Promise<ContextPackage["selectedContext"]> {
     const retrievalHints = deriveRetrievalHints(plan);
@@ -684,7 +720,7 @@ async function buildHookDebtEntries(
       readonly payoffTiming?: string;
       readonly notes: string;
     }>,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): Promise<ContextPackage["selectedContext"]> {
     const targetHookIds = [...new Set(plan.memo.threadRefs)];
     if (targetHookIds.length === 0) {
@@ -703,8 +739,16 @@ async function buildHookDebtEntries(
 
       const seedSummary = findHookSummary(summaries, hook.hookId, hook.startChapter, "seed");
       const latestSummary = findHookSummary(summaries, hook.hookId, hook.lastAdvancedChapter, "latest");
-      const role = language === "en" ? "memo-referenced debt" : "备忘引用旧债";
-      const promise = hook.expectedPayoff || (language === "en" ? "(unspecified)" : "（未写明）");
+      const role = language === "en"
+        ? "memo-referenced debt"
+        : language === "ko"
+          ? "메모 참조 부채"
+          : "备忘引用旧债";
+      const promise = hook.expectedPayoff || (language === "en"
+        ? "(unspecified)"
+        : language === "ko"
+          ? "(미지정)"
+          : "（未写明）");
       const seedBeat = seedSummary
         ? renderHookDebtBeat(seedSummary)
         : (hook.notes || promise);
@@ -717,7 +761,9 @@ async function buildHookDebtEntries(
         source: `runtime/hook_debt#${hook.hookId}`,
         reason: language === "en"
           ? "Narrative debt brief with original seed text for this hook agenda target."
-          : "含原始种子文本的叙事债务简报。",
+          : language === "ko"
+            ? "이 훅 아젠다 타겟을 위한 원본 시드 텍스트가 포함된 서사 부채 간략 보고서."
+            : "含原始种子文本的叙事债务简报。",
         excerpt: language === "en"
           ? [
               `${hook.hookId} (${hook.type}, ${role}, open ${age} chapters)`,
@@ -725,12 +771,19 @@ async function buildHookDebtEntries(
               `original seed (ch${hook.startChapter}): ${seedBeat}`,
               latestBeat ? `latest turn (ch${hook.lastAdvancedChapter}): ${latestBeat}` : undefined,
             ].filter(Boolean).join(" | ")
-          : [
-              `${hook.hookId}（${hook.type}，${role}，已开${age}章）`,
-              `读者承诺：${promise}`,
-              `种于第${hook.startChapter}章：${seedBeat}`,
-              latestBeat ? `推进于第${hook.lastAdvancedChapter}章：${latestBeat}` : undefined,
-            ].filter(Boolean).join(" | "),
+          : language === "ko"
+            ? [
+                `${hook.hookId} (${hook.type}, ${role}, ${age}장 개방)`,
+                `독자 약속: ${promise}`,
+                `제${hook.startChapter}장에 심음: ${seedBeat}`,
+                latestBeat ? `제${hook.lastAdvancedChapter}장 진행: ${latestBeat}` : undefined,
+              ].filter(Boolean).join(" | ")
+            : [
+                `${hook.hookId}（${hook.type}，${role}，已开${age}章）`,
+                `读者承诺：${promise}`,
+                `种于第${hook.startChapter}章：${seedBeat}`,
+                latestBeat ? `推进于第${hook.lastAdvancedChapter}章：${latestBeat}` : undefined,
+              ].filter(Boolean).join(" | "),
       }];
     });
 }
@@ -773,7 +826,7 @@ async function maybeOutlineSectionSources(
   reason: string,
   plan: PlanChapterOutput,
   kind: "story-frame" | "volume-map",
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
   outlineSectionSelector?: OutlineSectionSelector,
 ): Promise<ContextPackage["selectedContext"]> {
     const path = join(storyDir, fileName);
@@ -812,7 +865,7 @@ async function selectOutlineSectionEntries(params: {
   readonly reason: string;
   readonly plan: PlanChapterOutput;
   readonly kind: "story-frame" | "volume-map";
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly outlineSectionSelector?: OutlineSectionSelector;
 }): Promise<ContextPackage["selectedContext"]> {
     const sections = splitMarkdownSections(params.content);

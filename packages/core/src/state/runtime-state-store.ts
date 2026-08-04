@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+﻿import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   ChapterSummariesStateSchema,
@@ -59,7 +59,7 @@ export async function loadRuntimeStateSnapshot(bookDir: string): Promise<Runtime
 export async function buildRuntimeStateArtifacts(params: {
   readonly bookDir: string;
   readonly delta: RuntimeStateDelta;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly allowReapply?: boolean;
 }): Promise<RuntimeStateArtifacts> {
   const snapshot = await loadRuntimeStateSnapshot(params.bookDir);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sensitive word detection — rule-based analysis (no LLM).
  *
  * Detects politically sensitive, sexually explicit, and extremely violent terms
@@ -18,7 +18,7 @@ export interface SensitiveWordResult {
   readonly found: ReadonlyArray<SensitiveWordMatch>;
 }
 
-type SensitiveWordLanguage = "zh" | "en";
+type SensitiveWordLanguage = "zh" | "ko" | "en";
 
 // Political terms — severity "block"
 const POLITICAL_WORDS: ReadonlyArray<string> = [
@@ -74,7 +74,8 @@ export function analyzeSensitiveWords(
   const found: SensitiveWordMatch[] = [];
   const issues: AuditIssue[] = [];
   const isEnglish = language === "en";
-  const joiner = isEnglish ? ", " : "、";
+  const isKorean = language === "ko";
+  const joiner = isEnglish || isKorean ? ", " : "、";
 
   // Check built-in word lists
   for (const list of WORD_LISTS) {
@@ -84,17 +85,27 @@ export function analyzeSensitiveWords(
       const wordSummary = matches.map((m) => `"${m.word}"×${m.count}`).join(joiner);
       issues.push({
         severity: list.severity === "block" ? "critical" : "warning",
-        category: isEnglish ? "Sensitive terms" : "敏感词",
+        category: isEnglish
+          ? "Sensitive terms"
+          : isKorean
+            ? "민감어"
+            : "敏感词",
         description: isEnglish
           ? `Detected ${list.englishLabel}: ${wordSummary}`
-          : `检测到${list.label}：${wordSummary}`,
+          : isKorean
+            ? `${list.label} 감지: ${wordSummary}`
+            : `检测到${list.label}：${wordSummary}`,
         suggestion: isEnglish
           ? (list.severity === "block"
               ? "You must remove or replace these blocked terms before publication"
               : `Replace or soften these ${list.englishLabel} to reduce moderation risk`)
-          : (list.severity === "block"
-              ? "必须删除或替换政治敏感词，否则无法发布"
-              : `建议替换或弱化${list.label}，避免平台审核问题`),
+          : isKorean
+            ? (list.severity === "block"
+                ? "차단어는 게시 전 반드시 삭제 또는 교체해야 합니다"
+                : `${list.label}을(를) 대체하거나 순화하여 심사 위험을 낮추세요`)
+            : (list.severity === "block"
+                ? "必须删除或替换政治敏感词，否则无法发布"
+                : `建议替换或弱化${list.label}，避免平台审核问题`),
       });
     }
   }
@@ -107,13 +118,21 @@ export function analyzeSensitiveWords(
       const wordSummary = customMatches.map((m) => `"${m.word}"×${m.count}`).join(joiner);
       issues.push({
         severity: "warning",
-        category: isEnglish ? "Sensitive terms" : "敏感词",
+        category: isEnglish
+          ? "Sensitive terms"
+          : isKorean
+            ? "민감어"
+            : "敏感词",
         description: isEnglish
           ? `Detected custom sensitive term(s): ${wordSummary}`
-          : `检测到自定义敏感词：${wordSummary}`,
+          : isKorean
+            ? `사용자 정의 민감어 감지: ${wordSummary}`
+            : `检测到自定义敏感词：${wordSummary}`,
         suggestion: isEnglish
           ? "Replace or remove these terms according to project rules"
-          : "根据项目规则替换或删除这些词语",
+          : isKorean
+            ? "프로젝트 규칙에 따라 이 용어들을 교체하거나 삭제하세요"
+            : "根据项目规则替换或删除这些词语",
       });
     }
   }

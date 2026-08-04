@@ -1,7 +1,7 @@
 // Bilingual prompt builders for the narrative forecast agent, organized the
 // same way as prompts/short-fiction.ts: each builder switches on language.
 
-export type ForecastLanguage = "zh" | "en";
+export type ForecastLanguage = "zh" | "ko" | "en";
 
 export interface ForecastPromptInput {
   readonly contextMarkdown: string;
@@ -12,6 +12,17 @@ export interface ForecastPromptInput {
 }
 
 export function buildForecastSystemPrompt(language: ForecastLanguage): string {
+  if (language === "ko") {
+    return [
+      "당신은 장편 소설의 서사 추론 도우미입니다.",
+      "작업: 정사 컨텍스트와 작가가 제시한 분기점에서 출발해, 서로 격리된 비-정사 후보 미래 분기를 여러 개 추론해 작가가 병렬로 비교할 수 있게 합니다.",
+      "규칙:",
+      "- 분기는 서로 배타적입니다: 각 분기는 분기점에 다른 전개를 가정하며, 형제 분기를 참조하거나 의존하지 마세요.",
+      "- 분기는 계획 자료이지 본문이 아닙니다: 비트는 '무슨 일이 일어나는가'만 쓰고, 장면 단위의 디테일은 쓰지 마세요.",
+      "- 정사를 존중하세요: 모든 추론은 기존 사실, 캐릭터 고정, 세계 규칙과 일치해야 합니다; 필요하다면 반드시 risks에 적으세요.",
+      "- JSON 객체 하나만 출력하세요. 설명, 마크다운 제목, 코드 펜스는 금지합니다.",
+    ].join("\n");
+  }
   if (language === "en") {
     return [
       "You are the narrative forecast assistant for a long-form novel.",
@@ -51,6 +62,21 @@ export function buildForecastUserPrompt(input: ForecastPromptInput, language: Fo
       forecastJsonShape(firstChapter, "en"),
     ].join("\n");
   }
+  if (language === "ko") {
+    return [
+      input.contextMarkdown,
+      "",
+      "## 분기점",
+      "",
+      input.divergence,
+      "",
+      "## 출력 요구사항",
+      "",
+      `정확히 ${input.branchCount}개의 후보 분기를 생성하세요. 각 분기는 제${firstChapter}장부터 시작해 약 ${input.horizon}장 분량의 미래 전개를 다룹니다.`,
+      "다음 형태의 JSON을 출력하세요 (필드명 정확히 일치):",
+      forecastJsonShape(firstChapter, "ko"),
+    ].join("\n");
+  }
   return [
     input.contextMarkdown,
     "",
@@ -71,6 +97,12 @@ export function buildForecastRepairPrompt(validationError: string, language: For
     return [
       `Your previous output failed validation: ${validationError}`,
       "Re-output the complete JSON object only, fixing the problem above. No explanations, no code fences.",
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      `이전 출력이 검증을 통과하지 못했습니다: ${validationError}`,
+      "위 문제를 수정한 뒤 완전한 JSON 객체만 다시 출력하세요. 설명, 코드 펜스 금지.",
     ].join("\n");
   }
   return [
@@ -98,6 +130,29 @@ function forecastJsonShape(firstChapter: number, language: ForecastLanguage): st
       '      "risks": [{ "kind": "continuity|causality|character", "description": "consistency risk" }],',
       '      "uncertainties": ["open uncertainties"],',
       '      "intentAlignment": { "score": integer 0-100, "rationale": "how well this matches the author intent and current focus" }',
+      "    }",
+      "  ]",
+      "}",
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      "{",
+      '  "branches": [',
+      "    {",
+      '      "title": "분기 짧은 제목",',
+      '      "premise": "이 분기가 분기점에 대해 가정하는 전제",',
+      `      "beats": [{ "chapter": ${firstChapter}부터 시작하는 정수 장 번호, "summary": "해당 장에서 일어나는 일" }],`,
+      '      "characterDecisions": [{ "character": "인물명", "decision": "이 인물이 내리는 핵심 결정" }],',
+      '      "projectedChanges": {',
+      '        "characters": ["인물 상태 예상 변화"],',
+      '        "relationships": ["관계 예상 변화"],',
+      '        "world": ["세계/세력 예상 변화"],',
+      '        "hooks": ["어떤 훅이 추진·발화·파괴되는가"]',
+      "      },",
+      '      "risks": [{ "kind": "continuity|causality|character", "description": "일관성 위험" }],',
+      '      "uncertainties": ["불확실 요소"],',
+      '      "intentAlignment": { "score": 0에서 100 사이 정수, "rationale": "작가 의도와 현재 초점과의 부합도 설명" }',
       "    }",
       "  ]",
       "}",

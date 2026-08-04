@@ -1,4 +1,4 @@
-import type { Fact, StoredHook, StoredSummary } from "../state/memory-db.js";
+﻿import type { Fact, StoredHook, StoredSummary } from "../state/memory-db.js";
 import {
   localizeHookPayoffTiming,
   normalizeHookPayoffTiming,
@@ -7,19 +7,27 @@ import {
 
 export function renderSummarySnapshot(
   summaries: ReadonlyArray<StoredSummary>,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
   if (summaries.length === 0) return "- none";
 
-  const headers = language === "en"
-    ? [
+  let headers: string[];
+  if (language === "en") {
+    headers = [
       "| chapter | title | characters | events | stateChanges | hookActivity | mood | chapterType |",
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    : [
+    ];
+  } else if (language === "ko") {
+    headers = [
+      "| 장 | 제목 | 출현 인물 | 핵심 사건 | 상태 변화 | 훅 동태 | 감정 기조 | 장 유형 |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    ];
+  } else {
+    headers = [
       "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ];
+  }
 
   return [
     ...headers,
@@ -38,19 +46,27 @@ export function renderSummarySnapshot(
 
 export function renderHookSnapshot(
   hooks: ReadonlyArray<StoredHook>,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
   if (hooks.length === 0) return "- none";
 
-  const headers = language === "en"
-    ? [
+  let headers: string[];
+  if (language === "en") {
+    headers = [
       "| hook_id | start_chapter | type | status | last_advanced | expected_payoff | payoff_timing | depends_on | pays_off_in_arc | core_hook | half_life | promoted | notes |",
       "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    : [
+    ];
+  } else if (language === "ko") {
+    headers = [
+      "| 훅_id | 시작 장 | 유형 | 상태 | 최근 추적 | 예상 회수 | 회수 리듬 | 상위 의존 | 회수 권 | 핵심 | 반감기 | 승급 | 비고 |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ];
+  } else {
+    headers = [
       "| hook_id | 起始章节 | 类型 | 状态 | 最近推进 | 预期回收 | 回收节奏 | 上游依赖 | 回收卷 | 核心 | 半衰期 | 升级 | 备注 |",
       "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ];
+  }
 
   return [
     ...headers,
@@ -77,19 +93,21 @@ function renderHalfLifeCell(value: number | undefined): string {
   return String(Math.trunc(value));
 }
 
-function renderPromotedCell(value: boolean | undefined, language: "zh" | "en"): string {
+function renderPromotedCell(value: boolean | undefined, language: "zh" | "ko" | "en"): string {
   if (value === undefined) return "";
   if (language === "en") return value ? "true" : "false";
+  if (language === "ko") return value ? "승급" : "미승급";
   return value ? "是" : "否";
 }
 
-function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "en"): string {
-  if (ids.length === 0) return language === "en" ? "none" : "无";
+function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "ko" | "en"): string {
+  if (ids.length === 0) return language === "en" ? "none" : language === "ko" ? "없음" : "无";
   return `[${ids.join(", ")}]`;
 }
 
-function renderCoreHookCell(isCore: boolean, language: "zh" | "en"): string {
+function renderCoreHookCell(isCore: boolean, language: "zh" | "ko" | "en"): string {
   if (language === "en") return isCore ? "true" : "false";
+  if (language === "ko") return isCore ? "핵심" : "일반";
   return isCore ? "是" : "否";
 }
 
@@ -198,20 +216,22 @@ export function parseMarkdownTableRows(markdown: string): string[][] {
 export function isStateTableHeaderRow(row: ReadonlyArray<string>): boolean {
   const first = (row[0] ?? "").trim().toLowerCase();
   const second = (row[1] ?? "").trim().toLowerCase();
-  return (first === "字段" && second === "值") || (first === "field" && second === "value");
+  return (first === "字段" && second === "值")
+    || (first === "필드" && second === "값")
+    || (first === "field" && second === "value");
 }
 
 export function isCurrentChapterLabel(label: string): boolean {
-  return /^(当前章节|current chapter)$/i.test(label.trim());
+  return /^(当前章节|current chapter|현재 장)$/i.test(label.trim());
 }
 
 export function inferFactSubject(label: string): string {
-  if (/^(当前位置|current location)$/i.test(label)) return "protagonist";
-  if (/^(主角状态|protagonist state)$/i.test(label)) return "protagonist";
-  if (/^(当前目标|current goal)$/i.test(label)) return "protagonist";
-  if (/^(当前限制|current constraint)$/i.test(label)) return "protagonist";
-  if (/^(当前敌我|current alliances|current relationships)$/i.test(label)) return "protagonist";
-  if (/^(当前冲突|current conflict)$/i.test(label)) return "protagonist";
+  if (/^(当前位置|current location|현재 위치)$/i.test(label)) return "protagonist";
+  if (/^(主角状态|protagonist state|주인공 상태)$/i.test(label)) return "protagonist";
+  if (/^(当前目标|current goal|현재 목표)$/i.test(label)) return "protagonist";
+  if (/^(当前限制|current constraint|현재 제약)$/i.test(label)) return "protagonist";
+  if (/^(当前敌我|current alliances|current relationships|현재 관계)$/i.test(label)) return "protagonist";
+  if (/^(当前冲突|current conflict|현재 갈등)$/i.test(label)) return "protagonist";
   return "current_state";
 }
 

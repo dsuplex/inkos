@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+﻿import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { BaseAgent } from "./base.js";
 import type { BookConfig } from "../models/book.js";
@@ -188,7 +188,7 @@ export class PlannerAgent extends BaseAgent {
     readonly brief?: string;
     readonly chapterContext?: string;
     readonly recyclableHooks?: ReadonlyArray<StoredHook>;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
   }): Promise<ChapterMemo> {
     const [characterMatrix, subplotBoard, emotionalArcs, pendingHooks, bookRulesRaw] = await Promise.all([
       readCharacterMatrix(input.storyDir),
@@ -201,28 +201,36 @@ export class PlannerAgent extends BaseAgent {
     const language = input.language ?? "zh";
     const noPriorChapter = language === "en"
       ? "(this is the opening chapter — no prior chapter)"
-      : "（本章为起始章，无前章）";
+      : language === "ko"
+        ? "(이번 장이 첫 장입니다 — 이전 장이 없습니다)"
+        : "（本章为起始章，无前章）";
     const noBookRules = language === "en"
       ? "(no book_rules entries)"
-      : "（暂无 book_rules 条目）";
+      : language === "ko"
+        ? "(book_rules 항목 없음)"
+        : "（暂无 book_rules 条目）";
     const retryFeedbackHeader = language === "en"
       ? "## Error from previous output"
-      : "## 上次输出的错误";
+      : language === "ko"
+        ? "## 이전 출력에서의 오류"
+        : "## 上次输出的错误";
     const retryFeedbackTrailer = language === "en"
       ? "Fix and re-emit."
-      : "请修正后重新输出。";
+      : language === "ko"
+        ? "수정 후 다시 출력하세요."
+        : "请修正后重新输出。";
 
     const userMessage = buildPlannerUserMessage({
       chapterNumber: input.chapterNumber,
       previousChapterEndingExcerpt: input.previousEndingExcerpt?.trim()
         ? input.previousEndingExcerpt.trim()
         : noPriorChapter,
-      recentSummaries: formatRecentSummaries(input.chapterSummariesRaw, input.chapterNumber, 3),
-      currentArcProse: composeCurrentArcProse(subplotBoard, emotionalArcs, input.chapterNumber),
-      protagonistMatrixRow: extractProtagonistRow(characterMatrix),
-      opponentRows: extractOpponentRows(characterMatrix, 3),
-      collaboratorRows: extractCollaboratorRows(characterMatrix, 3),
-      relevantThreads: extractRelevantThreads(pendingHooks, subplotBoard),
+      recentSummaries: formatRecentSummaries(input.chapterSummariesRaw, input.chapterNumber, 3, language),
+      currentArcProse: composeCurrentArcProse(subplotBoard, emotionalArcs, input.chapterNumber, language),
+      protagonistMatrixRow: extractProtagonistRow(characterMatrix, language),
+      opponentRows: extractOpponentRows(characterMatrix, 3, language),
+      collaboratorRows: extractCollaboratorRows(characterMatrix, 3, language),
+      relevantThreads: extractRelevantThreads(pendingHooks, subplotBoard, language),
       recyclableHooks: formatRecyclableHooks(
         input.recyclableHooks ?? [],
         input.chapterNumber,
@@ -281,9 +289,12 @@ export class PlannerAgent extends BaseAgent {
     readonly isGoldenOpening: boolean;
     readonly fallbackGoal: string;
     readonly errorMessage: string;
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "ko" | "en";
   }): string {
-    if (input.language === "en") {
+    const isEn = input.language === "en";
+    const isKo = input.language === "ko";
+
+    if (isEn) {
       return [
         `# Chapter ${input.chapterNumber} memo`,
         "",
@@ -319,6 +330,45 @@ export class PlannerAgent extends BaseAgent {
         "",
         "## Planner warning",
         `The model failed to produce a valid chapter memo after ${MEMO_RETRY_LIMIT} attempts. Last parser error: ${input.errorMessage}`,
+      ].join("\n");
+    }
+
+    if (isKo) {
+      return [
+        `# 제 ${input.chapterNumber} 장 memo`,
+        "",
+        "## 챕터 목표",
+        input.fallbackGoal || `현재 대본에 따라 제 ${input.chapterNumber} 장을 계속 진행`,
+        "",
+        "## 관련 실마리",
+        "없음",
+        "",
+        "## 현재 작업",
+        `현재 장 목표와 권위 있는 도서 컨텍스트를 사용하여 제 ${input.chapterNumber} 장을 새 방향을 발명하지 않고 계속 진행하세요.`,
+        "",
+        "## 독자가 지금 기대하는 것",
+        "대본과 이전 장에서 형성된 독자의 능동적 기대를 유지하세요. 그것을 일반적인 장면으로 대체하지 마세요.",
+        "",
+        "## 이번 장에서 둘어낼 것 / 미루어 둘 것",
+        "이미 컨텍스트로 뒷받침되는 단기 약속만 회수하세요. 더 큰 비밀은 대본이 명시적으로 요구하지 않는 한 묻어 두세요.",
+        "",
+        "## 일상/전환 비트가 담당하는 역할",
+        "더 느린 비트가 필요하다면 압력, 증거, 관계 이동, 또는 다음 행동을 위한 구체적 셋업이 담기게 하세요.",
+        "",
+        "## 핵심 선택의 3가지 질문",
+        "주인공의 주요 선택에는 이유가 있어야 하고, 현재 이해관계와 맞아야 하며, 확립된 페르소나와 일관되어야 합니다.",
+        "",
+        "## 챕터 끝에 반드시 일어나야 할 변화",
+        "정보, 압력, 관계, 목표, 또는 위험에서 구체적 변화로 끝내어, 장이 단순한 요약만 되지 않게 하세요.",
+        "",
+        "## 이번 장 훅 장부",
+        "advance: 활동 중인 약속을 계속 밀고 가세요; resolve: 증거가 있는 것만 마무리하세요; defer: 더 큰 실마리는 나중 장으로 보존하세요.",
+        "",
+        "## 하지 말 것",
+        "확립된 사실과 모순되지 않게, 사용자의 현재 지시를 무시하지 않게, fallback memo를 새 대본으로 바꾸지 않게 하세요.",
+        "",
+        "## Planner warning",
+        `모델이 ${MEMO_RETRY_LIMIT}번 시도 후에도 유효한 챕터 memo를 생성하지 못했습니다. 마지막 파서 오류: ${input.errorMessage}`,
       ].join("\n");
     }
 
@@ -361,8 +411,10 @@ export class PlannerAgent extends BaseAgent {
   }
 
   private isGoldenOpeningChapter(language: string | undefined, chapterNumber: number): boolean {
-    const isZh = (language ?? "zh").toLowerCase().startsWith("zh");
-    return isZh ? chapterNumber <= 3 : chapterNumber <= 5;
+    const lang = (language ?? "zh").toLowerCase();
+    const isZh = lang.startsWith("zh");
+    const isKo = lang.startsWith("ko");
+    return (isZh || isKo) ? chapterNumber <= 3 : chapterNumber <= 5;
   }
 
   private buildArcContext(
@@ -372,9 +424,14 @@ export class PlannerAgent extends BaseAgent {
   ): string | undefined {
     if (!outlineNode) return undefined;
     if (volumeOutline === "(文件尚未创建)") return undefined;
-    return this.isChineseLanguage(language)
-      ? `卷纲节点：${outlineNode}`
-      : `Outline node: ${outlineNode}`;
+    const lang = (language ?? "zh").toLowerCase();
+    if (lang.startsWith("en")) {
+      return `Outline node: ${outlineNode}`;
+    }
+    if (lang.startsWith("ko")) {
+      return `볼 강령 노드: ${outlineNode}`;
+    }
+    return `卷纲节点：${outlineNode}`;
   }
 
   private deriveGoal(
@@ -506,7 +563,7 @@ export class PlannerAgent extends BaseAgent {
     return this.extractListItems(focusSection, limit);
   }
 
-  private renderHookBudget(activeCount: number, language: "zh" | "en"): string {
+  private renderHookBudget(activeCount: number, language: "zh" | "ko" | "en"): string {
     const cap = 12;
     if (activeCount < 10) {
       return language === "en"
@@ -797,7 +854,7 @@ export class PlannerAgent extends BaseAgent {
   private renderIntentMarkdown(
     intent: ChapterIntent,
     memo: ChapterMemo,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
     pendingHooks: string,
     chapterSummaries: string,
     activeHookCount: number,
@@ -819,42 +876,59 @@ export class PlannerAgent extends BaseAgent {
       ? memo.threadRefs.map((id) => `- ${id}`).join("\n")
       : "- (none)";
 
+    const isEn = language === "en";
+    const isKo = language === "ko";
+
+    const title = isEn ? "# Chapter Intent" : isKo ? "# 장 의도" : "# 章节意图";
+    const goalLabel = isEn ? "## Goal" : isKo ? "## 목표" : "## 目标";
+    const outlineNodeLabel = isEn ? "## Outline Node" : isKo ? "## 볼 강령 노드" : "## 大纲节点";
+    const arcContextLabel = isEn ? "## Arc Context" : isKo ? "## 아크 문맥" : "## 弧线语境";
+    const mustKeepLabel = isEn ? "## Must Keep" : isKo ? "## 필수 유지" : "## 必须保持";
+    const mustAvoidLabel = isEn ? "## Must Avoid" : isKo ? "## 필수 회피" : "## 必须避免";
+    const styleEmphasisLabel = isEn ? "## Style Emphasis" : isKo ? "## 스타일 강조" : "## 风格强调";
+    const chapterMemoLabel = isEn ? "## Chapter Memo" : isKo ? "## 장 메모" : "## 章节备忘";
+    const goldenOpeningLabel = isEn ? `- isGoldenOpening: ${memo.isGoldenOpening ? "true" : "false"}` : isKo ? `- isGoldenOpening: ${memo.isGoldenOpening ? "true" : "false"}` : `- isGoldenOpening: ${memo.isGoldenOpening ? "true" : "false"}`;
+    const threadRefsLabel = isEn ? "### Thread Refs" : isKo ? "### 실마리" : "### 线索";
+    const bodyLabel = isEn ? "### Body" : isKo ? "### 본문" : "### 正文";
+    const pendingHooksLabel = isEn ? "## Pending Hooks Snapshot" : isKo ? "## 대기 훅 스냅샷" : "## 伏笔池快照";
+    const chapterSummariesLabel = isEn ? "## Chapter Summaries Snapshot" : isKo ? "## 장 요약 스냅샷" : "## 章节摘要快照";
+
     return [
-      "# Chapter Intent",
+      title,
       "",
-      "## Goal",
+      goalLabel,
       intent.goal,
       "",
-      "## Outline Node",
-      intent.outlineNode ?? "(not found)",
+      outlineNodeLabel,
+      intent.outlineNode ?? (isEn ? "(not found)" : isKo ? "(찾을 수 없음)" : "(未找到)"),
       "",
-      "## Arc Context",
-      intent.arcContext ?? "(none)",
+      arcContextLabel,
+      intent.arcContext ?? (isEn ? "(none)" : isKo ? "(없음)" : "(无)"),
       "",
-      "## Must Keep",
+      mustKeepLabel,
       mustKeep,
       "",
-      "## Must Avoid",
+      mustAvoidLabel,
       mustAvoid,
       "",
-      "## Style Emphasis",
+      styleEmphasisLabel,
       styleEmphasis,
       "",
-      "## Chapter Memo",
-      `- isGoldenOpening: ${memo.isGoldenOpening ? "true" : "false"}`,
+      chapterMemoLabel,
+      goldenOpeningLabel,
       "",
-      "### Thread Refs",
+      threadRefsLabel,
       threadRefsLine,
       "",
-      "### Body",
+      bodyLabel,
       memoBody,
       "",
       this.renderHookBudget(activeHookCount, language),
       "",
-      "## Pending Hooks Snapshot",
+      pendingHooksLabel,
       pendingHooks,
       "",
-      "## Chapter Summaries Snapshot",
+      chapterSummariesLabel,
       chapterSummaries,
       "",
     ].join("\n");

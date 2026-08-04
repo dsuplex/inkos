@@ -1,4 +1,4 @@
-import { readFile, readdir } from "node:fs/promises";
+﻿import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { analyzeChapterCadence } from "./chapter-cadence.js";
 import {
@@ -18,7 +18,7 @@ export interface AnalyzeLongSpanFatigueInput {
   readonly chapterNumber: number;
   readonly chapterContent: string;
   readonly chapterSummary?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
 }
 
 export interface EnglishVarianceBrief {
@@ -37,6 +37,7 @@ interface SummaryRow {
 }
 
 const CHINESE_PUNCTUATION = /[，。！？；：“”‘’（）《》、\s\-—…·]/g;
+const KOREAN_PUNCTUATION = /[，。！？；：“”‘’（）《》、\s\-—…·ㆍ·]/g;
 const ENGLISH_PUNCTUATION = /[^a-z0-9]+/gi;
 
 export async function buildEnglishVarianceBrief(params: {
@@ -208,7 +209,7 @@ function parseSummaryRow(line: string): SummaryRow | null {
 
 function buildChapterTypeIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): LongSpanFatigueIssue | null {
   if (cadence.scenePressure?.pressure !== "high") {
     return null;
@@ -223,6 +224,14 @@ function buildChapterTypeIssue(
       suggestion: "Switch the next chapter's function instead of extending the same beat again. Rotate setup, payoff, reversal, and fallout more deliberately.",
     };
   }
+  if (language === "ko") {
+    return {
+      severity: "warning",
+      category: "리듬 단조",
+      description: `최근 ${streak}장 연속으로 "${repeatedType}" 장 유형이 유지되어 장편 리듬이 고착화될 위험이 있습니다.`,
+      suggestion: "다음 장은 기능을 바꿔 쓰세요. 동일한 레이아웃/추진 비트를 반복하지 말고 배치, 회수, 반전, 후효를 더 의식적으로 순환시키세요.",
+    };
+  }
 
   return {
     severity: "warning",
@@ -234,7 +243,7 @@ function buildChapterTypeIssue(
 
 function buildMoodIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): LongSpanFatigueIssue | null {
   if (cadence.moodPressure?.pressure !== "high") {
     return null;
@@ -249,6 +258,14 @@ function buildMoodIssue(
       suggestion: "Insert a release beat, warmth, humor, intimacy, or reflective quiet before escalating again.",
     };
   }
+  if (language === "ko") {
+    return {
+      severity: "warning",
+      category: "분위기 단조",
+      description: `최근 ${highTensionStreak}장 연속 고압 분위기(${recentMoods.join(" → ")})가 유지되며 뚜렷한 감정 해소가 없습니다.`,
+      suggestion: "다음 장에 쉼표·온기·유머·친밀감·성찰적 정적 중 하나를 배치해 한 번 풀어준 뒤 다시 압력을 올리세요.",
+    };
+  }
 
   return {
     severity: "warning",
@@ -260,7 +277,7 @@ function buildMoodIssue(
 
 function buildTitleIssue(
   cadence: ReturnType<typeof analyzeChapterCadence>,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): LongSpanFatigueIssue | null {
   if (cadence.titlePressure?.pressure !== "high") {
     return null;
@@ -273,6 +290,14 @@ function buildTitleIssue(
       category: "Title Collapse",
       description: `Recent titles keep collapsing around "${repeatedToken}" (${count} hits in the current window), which makes chapter naming feel formulaic.`,
       suggestion: "Change the next title anchor. Use a new image, action, consequence, or character vector instead of the same keyword shell.",
+    };
+  }
+  if (language === "ko") {
+    return {
+      severity: "warning",
+      category: "제목 붕괴",
+      description: `최근 제목들이 "${repeatedToken}" 주변으로 계속 수렴합니다(현재 윈도우 ${count}회 명중). 챕터 네이밍이 공식화되고 있습니다.`,
+      suggestion: "다음 장 제목의 앵커를 바꾸세요. 같은 키워드 껍데기를 재활용하지 말고 새로운 심상, 행동, 결과, 캐릭터 벡터를 쓰세요.",
     };
   }
 
@@ -315,7 +340,7 @@ async function loadRecentChapterBodies(
 function buildSentencePatternIssue(
   chapterBodies: ReadonlyArray<string>,
   boundary: "opening" | "ending",
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): LongSpanFatigueIssue | null {
   if (chapterBodies.length < LONG_SPAN_FATIGUE_THRESHOLDS.boundaryPatternMinBodies) return null;
 
@@ -351,6 +376,19 @@ function buildSentencePatternIssue(
       suggestion: boundary === "opening"
         ? "Change the next chapter opening vector. Start from action, consequence, or surprise instead of repeating the same camera move."
         : "Change the next chapter landing pattern. End on consequence, decision, or a new variable instead of repeating the same explanatory cadence.",
+    };
+  }
+  if (language === "ko") {
+    const category = boundary === "opening" ? "첫 문장 패턴 반복" : "끝 문장 패턴 반복";
+    const position = boundary === "opening" ? "첫 문장" : "끝 문장";
+    const verb = boundary === "opening" ? "여는" : "닫는";
+    return {
+      severity: "warning",
+      category,
+      description: `최근 3장 ${position}이(가) 매우 유사합니다(인접 유사도 ${pairText}). ${verb} 방식이 공식화될 위험이 있습니다. 현재 ${verb} 패턴: "${sample}"`,
+      suggestion: boundary === "opening"
+        ? "다음 장 여는 방식을 바꾸세요. 같은 앵글로 열지 말고 행동·결과·놀라움으로 진입하세요."
+        : "다음 장 닫는 방식을 바꾸세요. 같은 설명조 문장으로 끝내지 말고 행동 결과·결단·새 변수로 마무리하세요.",
     };
   }
 
@@ -458,12 +496,17 @@ function extractBoundarySentence(content: string, boundary: "opening" | "ending"
   return boundary === "opening" ? sentences[0]! : sentences[sentences.length - 1]!;
 }
 
-function normalizeSentence(sentence: string, language: "zh" | "en"): string {
+function normalizeSentence(sentence: string, language: "zh" | "ko" | "en"): string {
   if (language === "en") {
     return sentence
       .toLowerCase()
       .replace(ENGLISH_PUNCTUATION, "")
       .trim();
+  }
+  if (language === "ko") {
+    return sentence
+      .replace(KOREAN_PUNCTUATION, "")
+      .toLowerCase();
   }
 
   return sentence
@@ -471,7 +514,7 @@ function normalizeSentence(sentence: string, language: "zh" | "en"): string {
     .toLowerCase();
 }
 
-function summarizeSentence(sentence: string, language: "zh" | "en"): string {
+function summarizeSentence(sentence: string, language: "zh" | "ko" | "en"): string {
   if (language === "en") {
     const words = sentence
       .toLowerCase()
@@ -481,6 +524,10 @@ function summarizeSentence(sentence: string, language: "zh" | "en"): string {
       .slice(0, 6)
       .join(" ");
     return words.length > 0 ? words : sentence.slice(0, 32);
+  }
+  if (language === "ko") {
+    const collapsed = sentence.replace(KOREAN_PUNCTUATION, "");
+    return collapsed.slice(0, 12);
   }
 
   const collapsed = sentence.replace(CHINESE_PUNCTUATION, "");

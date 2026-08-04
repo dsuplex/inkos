@@ -34,7 +34,7 @@ export interface BookCreatePayload {
   readonly title: string;
   readonly genre: string;
   readonly platform: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly targetChapters: number;
   readonly chapterWordCount: number;
   readonly blurb: string;
@@ -130,7 +130,14 @@ const PLATFORMS_EN: ReadonlyArray<PlatformOption> = [
   { value: "other", label: "Other" },
 ];
 
-const PAGE_COPY: Record<"zh" | "en", PlatformCopy> = {
+const PLATFORMS_KO: ReadonlyArray<PlatformOption> = [
+  { value: "other", label: "문피아" },
+  { value: "other", label: "카카오페이지" },
+  { value: "other", label: "네이버" },
+  { value: "other", label: "기타" },
+];
+
+const PAGE_COPY: Record<"zh" | "ko" | "en", PlatformCopy> = {
   zh: {
     idleTitle: "从一句模糊想法开始",
     idleBody: "先填清楚书名、题材和故事核心，系统会生成基础设定并进入新书工作台。",
@@ -166,6 +173,42 @@ const PAGE_COPY: Record<"zh" | "en", PlatformCopy> = {
     syncedHint: "这份草案和 TUI / Studio Chat 共享。",
     helperTitle: "建议这样推进",
     helperBody: "先定世界观和主角，再定核心冲突、简介和卷一方向。想看当前草案时，可以在 TUI 里用 /draft。",
+  },
+  ko: {
+    idleTitle: "막연한 아이디어에서 시작하세요",
+    idleBody: "제목, 장르, 스토리 핵심을 먼저 입력하면 InkOS가 기초 설정을 생성하고 새 책 작업대로 이동합니다.",
+    formHeading: "도서 기본 정보",
+    formHint: "이 필드들은 책 생성 과정에 직접 반영됩니다. 소개글을 구체적으로 작성할수록 생성되는 기초 설정이 더 견고해집니다.",
+    titleLabel: "제목",
+    titlePlaceholder: "예: 야항장부",
+    genreLabel: "장르 / 유형",
+    genrePlaceholder: "예: 도시 서스펜스, 판타지, 공상 과학, 여성 향 로맨스",
+    platformLabel: "대상 플랫폼",
+    targetChaptersLabel: "목표 챕터 수",
+    chapterWordCountLabel: "챕터당 글자 수",
+    briefLabel: "스토리 소개 / 핵심 설정",
+    briefPlaceholder: "세계관, 주인공, 목표, 핵심 갈등, 1권 방향을 명확히 작성하세요. 예: 근미래 항구도시, 주인공은 과거 밀수 장부를 정리하려 하지만 옛 장부가 그를 다시 과거 사건으로 끌어들인다.",
+    createBook: "도서 생성",
+    creatingBook: "생성 중…",
+    creationStatus: "도서를 생성하는 중입니다. 완료되면 자동으로 작업대가 열립니다.",
+    creationSteps: ["도서 설정 저장", "기초 설정 생성", "작업대 준비"],
+    assistantHeading: "AI가 설정을 보완할까요?",
+    assistantHint: "이 영역은 보조 드래프트로, 필수 단계는 아닙니다. 기존 드래프트가 마음에 드시면 왼쪽 양식에 적용할 수 있습니다.",
+    applyDraft: "드래프트 적용",
+    promptLabel: "이 도서 계속 다듬기",
+    promptPlaceholder: "예: 항구 느낌의 긴장감 있는 프랜차이즈 스토리를 쓰고 싶어. 자극이 있는 직업을 청산하려는 이야기.",
+    promptPlaceholderFollowup: "예: 세계관을 근미래 항구도시로 변경, 여자 주인공은 좀 늦게 등장, 1권은 먼저 장부 정리부터 시작.",
+    submit: "드래프트 업봇",
+    submitting: "처리 중…",
+    create: "현재 드와프트로 도서 생성",
+    creating: "생성 중…",
+    discard: "드래프트 폐기",
+    draftHeading: "현재 기초 설정 드래프트",
+    missingHeading: "아직 누락된 주요 정보",
+    missingHint: "이 필드들을 한 번에 다 채울 필요는 없지만, 너무 많이 누락된 상태에서 도서를 생성하지 마세요.",
+    syncedHint: "이 드래프트는 TUI / Studio Chat과 공유됩니다.",
+    helperTitle: "권장 진행 방법",
+    helperBody: "먼저 세계관과 주인공을 정한 후, 핵심 갈등, 소개글, 1권 방향을 설정하세요. 현재 드래프트를 확인하려면 TUI에서 /draft를 사용할 수 있습니다.",
   },
   en: {
     idleTitle: "Start from a rough idea",
@@ -212,11 +255,11 @@ export function pickValidValue(current: string, available: ReadonlyArray<string>
   return available[0] ?? "";
 }
 
-export function defaultChapterWordsForLanguage(language: "zh" | "en"): string {
-  return language === "en" ? "2000" : "3000";
+export function defaultChapterWordsForLanguage(language: "zh" | "ko" | "en"): string {
+  return language === "en" ? "2000" : language === "ko" ? "4000" : "3000";
 }
 
-export function defaultBookCreateForm(language: "zh" | "en"): BookCreateFormState {
+export function defaultBookCreateForm(language: "zh" | "ko" | "en"): BookCreateFormState {
   return {
     title: "",
     genre: "",
@@ -227,8 +270,10 @@ export function defaultBookCreateForm(language: "zh" | "en"): BookCreateFormStat
   };
 }
 
-export function platformOptionsForLanguage(language: "zh" | "en"): ReadonlyArray<PlatformOption> {
-  return language === "en" ? PLATFORMS_EN : PLATFORMS_ZH;
+export function platformOptionsForLanguage(language: "zh" | "ko" | "en"): ReadonlyArray<PlatformOption> {
+  if (language === "en") return PLATFORMS_EN;
+  if (language === "ko") return PLATFORMS_KO;
+  return PLATFORMS_ZH;
 }
 
 function parsePositiveInteger(value: string): number | null {
@@ -248,7 +293,7 @@ export function isBookCreateFormReady(form: BookCreateFormState): boolean {
 
 export function buildBookCreatePayload(
   form: BookCreateFormState,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): BookCreatePayload {
   const targetChapters = parsePositiveInteger(form.targetChapters);
   const chapterWordCount = parsePositiveInteger(form.chapterWordCount);
@@ -292,7 +337,7 @@ export function canCreateFromDraft(draft?: BookCreationDraft): boolean {
   );
 }
 
-const DRAFT_STAGE_LABELS: Record<"zh" | "en", Record<string, string>> = {
+const DRAFT_STAGE_LABELS: Record<"zh" | "ko" | "en", Record<string, string>> = {
   zh: {
     basic: "基础信息",
     world: "世界观与规则",
@@ -315,6 +360,29 @@ const DRAFT_STAGE_LABELS: Record<"zh" | "en", Record<string, string>> = {
     volumeOutline: "卷纲方向",
     currentFocus: "当前重点",
     constraints: "写作约束",
+  },
+  ko: {
+    basic: "기본 정보",
+    world: "세계관 및 규칙",
+    conflict: "갈등 및 보상",
+    structure: "구조 및 작문 제약",
+    characters: "주인공 및 등장인물",
+    title: "제목",
+    genre: "장르",
+    platform: "플랫폼",
+    language: "언어",
+    targetChapters: "목표 챕터 수",
+    chapterWordCount: "챕터당 글자 수",
+    worldPremise: "세계관",
+    settingNotes: "설정 보충",
+    protagonist: "주인공",
+    supportingCast: "조연",
+    conflictCore: "핵심 갈등",
+    blurb: "소개글",
+    authorIntent: "작가 의도",
+    volumeOutline: "권 방향",
+    currentFocus: "현재 포커스",
+    constraints: "집필 제약",
   },
   en: {
     basic: "Basics",
@@ -365,7 +433,7 @@ function draftValueAsText(value: unknown): string | null {
 
 export function buildCreationDraftStages(
   draft: BookCreationDraft,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): ReadonlyArray<DraftSummaryStage> {
   const labels = DRAFT_STAGE_LABELS[language];
   const missingSet = new Set(draft.missingFields ?? []);
@@ -399,7 +467,7 @@ export function buildCreationDraftStages(
 
 export function buildCreationDraftSummary(
   draft: BookCreationDraft,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): ReadonlyArray<DraftSummaryRow> {
   const rows = language === "en"
     ? [
@@ -579,7 +647,7 @@ export async function waitForBookReady(
 export function BookCreate({ nav, theme, t }: { nav: Nav; theme: Theme; t: TFunction }) {
   const c = useColors(theme);
   const { data: project } = useApi<{ language: string }>("/project");
-  const projectLang = (project?.language ?? "zh") as "zh" | "en";
+  const projectLang = (project?.language ?? "zh") as "zh" | "ko" | "en";
   const copy = PAGE_COPY[projectLang];
   const platformChoices = platformOptionsForLanguage(projectLang);
 

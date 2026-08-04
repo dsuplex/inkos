@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ChapterSummariesState,
   CurrentStateState,
   HooksState,
@@ -14,23 +14,30 @@ import {
 
 export function renderHooksProjection(
   state: HooksState,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
   options?: { readonly currentChapter?: number },
 ): string {
-  const title = language === "en" ? "# Pending Hooks" : "# 伏笔池";
-  // Phase 7 + hotfixes 1 & 2: depends_on / pays_off_in_arc / core_hook / half_life / promoted
-  // are visible columns, so writer and reviewer both see the causal chain, planned payoff arc,
-  // stale threshold, and promotion flag. stale / blocked diagnostic flags are appended to the
-  // status cell.
-  const headers = language === "en"
-    ? [
+  let title: string;
+  let headers: string[];
+  if (language === "en") {
+    title = "# Pending Hooks";
+    headers = [
       "| hook_id | start_chapter | type | status | last_advanced_chapter | expected_payoff | payoff_timing | depends_on | pays_off_in_arc | core_hook | half_life | promoted | notes |",
       "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    : [
+    ];
+  } else if (language === "ko") {
+    title = "# 대기 훅";
+    headers = [
+      "| 훅_id | 시작 장 | 유형 | 상태 | 최근 추적 장 | 예상 회수 | 회수 리듬 | 상위 의존 | 회수 권 | 핵심 | 반감기 | 승급 | 비고 |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ];
+  } else {
+    title = "# 伏笔池";
+    headers = [
       "| hook_id | 起始章节 | 类型 | 状态 | 最近推进 | 预期回收 | 回收节奏 | 上游依赖 | 回收卷 | 核心 | 半衰期 | 升级 | 备注 |",
       "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ];
+  }
 
   const currentChapter = options?.currentChapter;
   const diagnostics = typeof currentChapter === "number"
@@ -71,13 +78,18 @@ export function renderHooksProjection(
   return [title, "", ...headers, ...rows, ""].join("\n");
 }
 
-function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "en"): string {
-  if (ids.length === 0) return language === "en" ? "none" : "无";
+function renderDependsOnCell(ids: ReadonlyArray<string>, language: "zh" | "ko" | "en"): string {
+  if (ids.length === 0) {
+    if (language === "en") return "none";
+    if (language === "ko") return "없음";
+    return "无";
+  }
   return `[${ids.join(", ")}]`;
 }
 
-function renderCoreHookCell(isCore: boolean, language: "zh" | "en"): string {
+function renderCoreHookCell(isCore: boolean, language: "zh" | "ko" | "en"): string {
   if (language === "en") return isCore ? "true" : "false";
+  if (language === "ko") return isCore ? "핵심" : "일반";
   return isCore ? "是" : "否";
 }
 
@@ -86,26 +98,38 @@ function renderHalfLifeCell(value: number | undefined): string {
   return String(Math.trunc(value));
 }
 
-function renderPromotedCell(value: boolean | undefined, language: "zh" | "en"): string {
+function renderPromotedCell(value: boolean | undefined, language: "zh" | "ko" | "en"): string {
   if (value === undefined) return "";
   if (language === "en") return value ? "true" : "false";
+  if (language === "ko") return value ? "승급" : "미승급";
   return value ? "是" : "否";
 }
 
 export function renderChapterSummariesProjection(
   state: ChapterSummariesState,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
-  const title = language === "en" ? "# Chapter Summaries" : "# 章节摘要";
-  const headers = language === "en"
-    ? [
+  let title: string;
+  let headers: string[];
+  if (language === "en") {
+    title = "# Chapter Summaries";
+    headers = [
       "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |",
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
-    ]
-    : [
+    ];
+  } else if (language === "ko") {
+    title = "# 장 요약";
+    headers = [
+      "| 장 | 제목 | 출현 인물 | 핵심 사건 | 상태 변화 | 훅 동태 | 감정 기조 | 장 유형 |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    ];
+  } else {
+    title = "# 章节摘要";
+    headers = [
       "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
     ];
+  }
 
   const rows = [...state.rows]
     .sort((left, right) => left.chapter - right.chapter)
@@ -127,10 +151,25 @@ export function renderChapterSummariesProjection(
 
 export function renderCurrentStateProjection(
   state: CurrentStateState,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
-  const layout = language === "en"
-    ? {
+  let layout: {
+    title: string;
+    tableHeader: string;
+    labels: {
+      chapter: string;
+      location: string;
+      protagonistState: string;
+      goal: string;
+      constraint: string;
+      alliances: string;
+      conflict: string;
+    };
+    placeholders: string;
+    additionalTitle: string;
+  };
+  if (language === "en") {
+    layout = {
       title: "# Current State",
       tableHeader: "| Field | Value |",
       labels: {
@@ -144,8 +183,25 @@ export function renderCurrentStateProjection(
       },
       placeholders: "(not set)",
       additionalTitle: "## Additional State",
-    }
-    : {
+    };
+  } else if (language === "ko") {
+    layout = {
+      title: "# 현재 상태",
+      tableHeader: "| 필드 | 값 |",
+      labels: {
+        chapter: "현재 장",
+        location: "현재 위치",
+        protagonistState: "주인공 상태",
+        goal: "현재 목표",
+        constraint: "현재 제약",
+        alliances: "현재 관계",
+        conflict: "현재 갈등",
+      },
+      placeholders: "(미설정)",
+      additionalTitle: "## 기타 상태",
+    };
+  } else {
+    layout = {
       title: "# 当前状态",
       tableHeader: "| 字段 | 值 |",
       labels: {
@@ -160,31 +216,32 @@ export function renderCurrentStateProjection(
       placeholders: "（未设定）",
       additionalTitle: "## 其他状态",
     };
+  }
 
   const slots = [
     {
       label: layout.labels.location,
-      aliases: ["Current Location", "当前位置"],
+      aliases: ["Current Location", "현재 위치", "当前位置"],
     },
     {
       label: layout.labels.protagonistState,
-      aliases: ["Protagonist State", "主角状态"],
+      aliases: ["Protagonist State", "주인공 상태", "主角状态"],
     },
     {
       label: layout.labels.goal,
-      aliases: ["Current Goal", "当前目标"],
+      aliases: ["Current Goal", "현재 목표", "当前目标"],
     },
     {
       label: layout.labels.constraint,
-      aliases: ["Current Constraint", "当前限制"],
+      aliases: ["Current Constraint", "현재 제약", "当前限制"],
     },
     {
       label: layout.labels.alliances,
-      aliases: ["Current Alliances", "Current Relationships", "当前敌我"],
+      aliases: ["Current Alliances", "Current Relationships", "현재 관계", "当前敌我"],
     },
     {
       label: layout.labels.conflict,
-      aliases: ["Current Conflict", "当前冲突"],
+      aliases: ["Current Conflict", "현재 갈등", "当前冲突"],
     },
   ] as const;
 

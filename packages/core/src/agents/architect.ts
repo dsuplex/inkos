@@ -606,7 +606,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
   // -------------------------------------------------------------------------
   // Parsing
   // -------------------------------------------------------------------------
-  private async parseSectionsWithRepair(content: string, language: "zh" | "en"): Promise<ArchitectOutput> {
+  private async parseSectionsWithRepair(content: string, language: "zh" | "ko" | "en"): Promise<ArchitectOutput> {
     try {
       return this.parseSections(content, language);
     } catch (error) {
@@ -640,7 +640,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
 
   private async repairMissingSections(
     error: MissingArchitectSectionsError,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): Promise<string> {
     const missingList = error.missing.join(", ");
     const system = language === "en"
@@ -671,7 +671,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     return response.content;
   }
 
-  private parseSections(content: string, language: "zh" | "en"): ArchitectOutput {
+  private parseSections(content: string, language: "zh" | "ko" | "en"): ArchitectOutput {
     const parsedSections = this.parseArchitectSectionMap(content);
 
     // Phase 5 new sections take precedence.
@@ -817,14 +817,14 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     return roles;
   }
 
-  private buildStoryBibleShim(storyFrame: string, language: "zh" | "en"): string {
+  private buildStoryBibleShim(storyFrame: string, language: "zh" | "ko" | "en"): string {
     if (language === "en") {
       return `# Story Bible (compat pointer — deprecated)\n\n> This file is kept for external readers only. The authoritative source is now:\n> - outline/story_frame.md (theme / tonal ground / core conflict / world rules / endgame)\n> - outline/volume_map.md (chapter-granular plot map)\n> - roles/ directory (one-file-per-character sheets)\n\n## Excerpt from story_frame\n\n${storyFrame.slice(0, 2000)}\n`;
     }
     return `# 故事圣经（兼容指针——已废弃）\n\n> 本文件仅为外部读取保留。权威来源已迁移至：\n> - outline/story_frame.md（主题 / 基调 / 核心冲突 / 世界铁律 / 终局）\n> - outline/volume_map.md（章级别的分卷地图）\n> - roles/ 文件夹（一人一卡角色档案）\n\n## story_frame 摘录\n\n${storyFrame.slice(0, 2000)}\n`;
   }
 
-  private buildCharacterMatrixShim(roles: ReadonlyArray<ArchitectRole>, language: "zh" | "en"): string {
+  private buildCharacterMatrixShim(roles: ReadonlyArray<ArchitectRole>, language: "zh" | "ko" | "en"): string {
     const majorLines = roles.filter((role) => role.tier === "major")
       .map((role) => `- roles/主要角色/${role.name}.md`);
     const minorLines = roles.filter((role) => role.tier === "minor")
@@ -843,7 +843,7 @@ You MUST emit all **5 SECTION blocks in order**: story_frame → volume_map → 
     bookDir: string,
     output: ArchitectOutput,
     _numericalSystem: boolean = true,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "ko" | "en" = "zh",
     mode: "init" | "revise" = "init",
   ): Promise<void> {
     const storyDir = join(bookDir, "story");
@@ -1157,7 +1157,7 @@ ${genreBody}
   // -------------------------------------------------------------------------
   private buildReviewFeedbackBlock(
     reviewFeedback: string | undefined,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): string {
     const trimmed = reviewFeedback?.trim();
     if (!trimmed) return "";
@@ -1278,7 +1278,7 @@ ${trimmed}\n`;
       return section;
     }
 
-    const language: "zh" | "en" = /[\u4e00-\u9fff]/.test(section) ? "zh" : "en";
+    const language: "zh" | "ko" | "en" = /[\u4e00-\u9fff]/.test(section) ? "zh" : "en";
     const normalizedHooks = dataRows.map((row, index) => {
       const rawProgress = row[4] ?? "";
       const normalizedProgress = this.parseHookChapterNumber(rawProgress);
@@ -1370,7 +1370,7 @@ ${trimmed}\n`;
     return volumes;
   }
 
-  private normalizeDormantSeedStatus(status: string | undefined, language: "zh" | "en"): string {
+  private normalizeDormantSeedStatus(status: string | undefined, language: "zh" | "ko" | "en"): string {
     const normalized = status?.trim().toLowerCase() ?? "";
     if (!normalized || /^(open|opened|active)$/i.test(normalized)) {
       return language === "zh" ? "暂缓" : "deferred";
@@ -1417,7 +1417,7 @@ ${trimmed}\n`;
     return !["0", "none", "n/a", "na", "-", "无", "未推进"].includes(normalized);
   }
 
-  private mergeHookNotes(notes: string, seedNote: string, language: "zh" | "en"): string {
+  private mergeHookNotes(notes: string, seedNote: string, language: "zh" | "ko" | "en"): string {
     const trimmedNotes = notes.trim();
     const trimmedSeed = seedNote.trim();
     if (!trimmedSeed) {

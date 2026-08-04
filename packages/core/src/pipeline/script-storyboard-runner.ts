@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+﻿import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import type { AgentContext } from "../agents/base.js";
 import { generateStoryGraph } from "../interactive-film/generate.js";
@@ -34,7 +34,7 @@ export interface ScriptCreationRunOptions {
   readonly requirements?: string;
   readonly episodeCount?: number;
   readonly episodeDuration?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly projectId?: string;
   readonly outDir?: string;
   readonly onProgress?: (message: string) => void;
@@ -53,7 +53,7 @@ export interface StoryboardCreationRunOptions {
   readonly aspectRatio?: string;
   readonly granularity?: string;
   readonly maxShots?: number;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly projectId?: string;
   readonly outDir?: string;
   readonly onProgress?: (message: string) => void;
@@ -73,7 +73,7 @@ export interface InteractiveFilmCreationRunOptions {
   readonly episodeDuration?: string;
   readonly budget?: string;
   readonly referenceMode?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly projectId?: string;
   readonly outDir?: string;
   readonly onProgress?: (message: string) => void;
@@ -404,6 +404,20 @@ function buildInteractiveFilmGraphPremise(
       `Image prompts:\n${imagePrompts}`,
     ].filter(Boolean).join("\n\n");
   }
+  if ((input.language ?? "zh") === "ko") {
+    return [
+      `제작 요청: ${input.requirements}`,
+      input.targetAudience ? `목표 관객: ${input.targetAudience}` : "",
+      input.episodeCount ? `세그먼트/에피소드: ${input.episodeCount}` : "",
+      input.episodeDuration ? `세그먼트당 길이: ${input.episodeDuration}` : "",
+      input.budget ? `예산: ${input.budget}` : "",
+      input.referenceMode ? `참조 모드: ${input.referenceMode}` : "",
+      `스토리 트리:\n${storyTree}`,
+      `변수와 플래그:\n${flags}`,
+      `인터랙티브 각본:\n${script}`,
+      `이미지 프롬프트:\n${imagePrompts}`,
+    ].filter(Boolean).join("\n\n");
+  }
   return [
     `创作需求：${input.requirements}`,
     input.targetAudience ? `目标受众：${input.targetAudience}` : "",
@@ -425,16 +439,17 @@ function buildFallbackStoryGraph(
   imagePrompts: string,
 ): StoryGraph {
   const en = (input.language ?? "zh") === "en";
+  const ko = (input.language ?? "zh") === "ko";
   const prompts = parseStoryboardPromptLines(imagePrompts);
   const actCount = Math.max(2, Math.min(8, (input.episodeCount ?? prompts.length) || 3));
   const nodes: StoryGraph["nodes"] = [
     {
       id: "start",
-      title: en ? "Opening" : "开场",
+      title: en ? "Opening" : ko ? "오프닝" : "开场",
       type: "start",
       sceneDesc: input.requirements || title,
       dialogue: [],
-      choices: [{ id: "start-act-1", text: en ? "Enter Act 1" : "进入第一幕", targetNodeId: "act-1", effects: [] }],
+      choices: [{ id: "start-act-1", text: en ? "Enter Act 1" : ko ? "1막 진입" : "进入第一幕", targetNodeId: "act-1", effects: [] }],
       imageSlot: { prompt: prompts[0] ?? input.requirements ?? title },
       act: "start",
       position: { x: 0, y: 0 },
@@ -445,16 +460,16 @@ function buildFallbackStoryGraph(
     const isLast = index === actCount;
     nodes.push({
       id: `act-${index}`,
-      title: en ? `Act ${index}` : `第 ${index} 幕`,
+      title: en ? `Act ${index}` : ko ? `${index}막` : `第 ${index} 幕`,
       type: isLast ? "branch" : "normal",
-      sceneDesc: en ? `Act ${index} of the interactive film "${title}".` : `互动影游《${title}》第 ${index} 幕。`,
+      sceneDesc: en ? `Act ${index} of the interactive film "${title}".` : ko ? `인터랙티브 필름《${title}》${index}막.` : `互动影游《${title}》第 ${index} 幕。`,
       dialogue: [],
       choices: isLast
         ? [
-          { id: "to-ending-a", text: en ? "Complete the main objective" : "完成主线目标", targetNodeId: "ending-a", effects: [{ var: "story_progress", op: "add", value: 1 }] },
-          { id: "to-ending-b", text: en ? "Take the other aftermath" : "进入另一条余波", targetNodeId: "ending-b", effects: [{ var: "story_progress", op: "add", value: 1 }] },
+          { id: "to-ending-a", text: en ? "Complete the main objective" : ko ? "주 목표 달성" : "完成主线目标", targetNodeId: "ending-a", effects: [{ var: "story_progress", op: "add", value: 1 }] },
+          { id: "to-ending-b", text: en ? "Take the other aftermath" : ko ? "다른 여파로 가기" : "进入另一条余波", targetNodeId: "ending-b", effects: [{ var: "story_progress", op: "add", value: 1 }] },
         ]
-        : [{ id: `act-${index}-next`, text: en ? "Keep going" : "继续推进", targetNodeId: `act-${index + 1}`, effects: [{ var: "story_progress", op: "add", value: 1 }] }],
+        : [{ id: `act-${index}-next`, text: en ? "Keep going" : ko ? "계속 진행" : "继续推进", targetNodeId: `act-${index + 1}`, effects: [{ var: "story_progress", op: "add", value: 1 }] }],
       imageSlot: { prompt: prompts[index - 1] ?? prompts[0] ?? input.requirements ?? title },
       act: `act-${index}`,
       position: { x: index * 260, y: index % 2 === 0 ? 120 : 0 },
@@ -464,9 +479,9 @@ function buildFallbackStoryGraph(
   nodes.push(
     {
       id: "ending-a",
-      title: en ? "Ending One" : "结局一",
+      title: en ? "Ending One" : ko ? "엔딩 1" : "结局一",
       type: "ending",
-      sceneDesc: en ? "The main objective is completed and the story converges." : "主线目标被完成，故事进入收束。",
+      sceneDesc: en ? "The main objective is completed and the story converges." : ko ? "주 목표가 완료되고 이야기가 수렴합니다." : "主线目标被完成，故事进入收束。",
       dialogue: [],
       choices: [],
       act: "ending",
@@ -474,11 +489,13 @@ function buildFallbackStoryGraph(
     },
     {
       id: "ending-b",
-      title: en ? "Ending Two" : "结局二",
+      title: en ? "Ending Two" : ko ? "엔딩 2" : "结局二",
       type: "ending",
       sceneDesc: en
         ? "The player keeps the other aftermath and the story closes on the forked path."
-        : "玩家选择保留另一条余波，故事进入分岔收束。",
+        : ko
+          ? "플레이어가 다른 여파를 유지하며 이야기는 분기된 경로로 마무리됩니다."
+          : "玩家选择保留另一条余波，故事进入分岔收束。",
       dialogue: [],
       choices: [],
       act: "ending",
@@ -502,23 +519,23 @@ function buildFallbackStoryGraph(
       name: "story_progress",
       type: "counter",
       default: 0,
-      desc: en ? "Story progression" : "剧情推进进度",
+      desc: en ? "Story progression" : ko ? "스토리 진행" : "剧情推进进度",
     }],
     nodes,
     endings: [
       {
         id: "ending-a",
         nodeId: "ending-a",
-        title: en ? "Ending One" : "结局一",
+        title: en ? "Ending One" : ko ? "엔딩 1" : "结局一",
         type: "neutral",
-        description: en ? "The main objective is completed." : "主线目标被完成。",
+        description: en ? "The main objective is completed." : ko ? "주 목표가 완료됩니다." : "主线目标被完成。",
       },
       {
         id: "ending-b",
         nodeId: "ending-b",
-        title: en ? "Ending Two" : "结局二",
+        title: en ? "Ending Two" : ko ? "엔딩 2" : "结局二",
         type: "secret",
-        description: en ? "The player keeps the other aftermath." : "玩家选择保留另一条余波。",
+        description: en ? "The player keeps the other aftermath." : ko ? "플레이어가 다른 여파를 유지합니다." : "玩家选择保留另一条余波。",
       },
     ],
   };
@@ -590,9 +607,9 @@ async function ensureProjectDir(projectRoot: string, relativePath: string): Prom
 function mergeRequirements(
   instruction: string,
   requirements: string | undefined,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
-  const extraLabel = language === "en" ? "Additional requirements:" : "补充要求：";
+  const extraLabel = language === "en" ? "Additional requirements:" : language === "ko" ? "추가 요구사항:" : "补充要求：";
   return [
     instruction.trim(),
     requirements?.trim() ? `\n${extraLabel}\n${requirements.trim()}` : "",

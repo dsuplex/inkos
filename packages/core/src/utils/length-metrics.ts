@@ -1,19 +1,23 @@
 import type { LengthCountingMode, LengthNormalizeMode, LengthSpec } from "../models/length-governance.js";
 
-export type LengthLanguage = "zh" | "en";
+export type LengthLanguage = "zh" | "ko" | "en";
 
 const REFERENCE_TARGET = 2200;
 const SOFT_RANGE_DELTA = 300;
 const HARD_RANGE_DELTA = 600;
 
 // Per-chapter length default in the book's native unit: Chinese counts characters (3000字),
-// English counts words (~2000 ≈ a 3000-char chapter). One cross-language number would mis-scale —
-// 3000 read as English words runs ~50% long, and the hard-range guard then force-expands correct chapters.
+// Korean counts characters (4000자), English counts words (~2000 ≈ a 3000-char chapter).
+// One cross-language number would mis-scale — 3000 read as English words runs ~50% long,
+// and the hard-range guard then force-expands correct chapters.
 export const DEFAULT_CHAPTER_LENGTH_ZH = 3000;
+export const DEFAULT_CHAPTER_LENGTH_KO = 4000;
 export const DEFAULT_CHAPTER_LENGTH_EN = 2000;
 
 export function defaultChapterLength(language: LengthLanguage = "zh"): number {
-  return language === "en" ? DEFAULT_CHAPTER_LENGTH_EN : DEFAULT_CHAPTER_LENGTH_ZH;
+  if (language === "en") return DEFAULT_CHAPTER_LENGTH_EN;
+  if (language === "ko") return DEFAULT_CHAPTER_LENGTH_KO;
+  return DEFAULT_CHAPTER_LENGTH_ZH;
 }
 
 export function countChapterLength(
@@ -33,14 +37,18 @@ export function countChapterLength(
 export function resolveLengthCountingMode(
   language: LengthLanguage = "zh",
 ): LengthCountingMode {
-  return language === "en" ? "en_words" : "zh_chars";
+  if (language === "en") return "en_words";
+  if (language === "ko") return "ko_chars";
+  return "zh_chars";
 }
 
 export function formatLengthCount(
   count: number,
   countingMode: LengthCountingMode,
 ): string {
-  return countingMode === "en_words" ? `${count} words` : `${count}字`;
+  if (countingMode === "en_words") return `${count} words`;
+  if (countingMode === "ko_chars") return `${count}자`;
+  return `${count}字`;
 }
 
 export function buildLengthSpec(

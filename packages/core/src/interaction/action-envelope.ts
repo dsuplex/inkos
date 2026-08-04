@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { PlayModeSchema, type PlayMode } from "./session.js";
 import { StoryNodeSchema } from "../interactive-film/graph-schema.js";
 import {
@@ -42,7 +42,7 @@ export const CreateBookActionPayloadSchema = z.object({
   title: z.string().min(1).optional(),
   genre: z.string().min(1).optional(),
   platform: z.enum(["tomato", "qidian", "feilu", "other"]).optional(),
-  language: z.enum(["zh", "en"]).optional(),
+  language: z.enum(["zh", "ko", "en"]).optional(),
   targetChapters: z.number().int().min(1).optional(),
   chapterWordCount: z.number().int().min(1).optional(),
 }).strict();
@@ -53,7 +53,7 @@ export const WriteNextActionPayloadSchema = z.object({
 
 // charsPerChapter 的单位随语言变化：zh 是每章汉字数（900-1200），en 是每章英文单词数（600-800）。
 // 这两个区间与 short-fiction-runner 的执行层校验共用同一组常量，保证确认卡和执行层不再各说各话。
-export function shortRunCharsPerChapterRange(language: "zh" | "en"): {
+export function shortRunCharsPerChapterRange(language: "zh" | "ko" | "en"): {
   readonly min: number;
   readonly max: number;
 } {
@@ -62,13 +62,15 @@ export function shortRunCharsPerChapterRange(language: "zh" | "en"): {
     : { min: SHORT_FICTION_MIN_CHARS_PER_CHAPTER, max: SHORT_FICTION_MAX_CHARS_PER_CHAPTER };
 }
 
-export function shortRunCharsPerChapterError(value: number, language: "zh" | "en"): string {
+export function shortRunCharsPerChapterError(value: number, language: "zh" | "ko" | "en"): string {
   const { min, max } = shortRunCharsPerChapterRange(language);
-  return language === "en"
-    ? `charsPerChapter=${value} 超出英文短篇的合法范围（每章 ${min}-${max} 个英文单词）。`
-      + `charsPerChapter=${value} is outside the valid range for English shorts (${min}-${max} words per chapter).`
-    : `charsPerChapter=${value} 超出中文短篇的合法范围（每章 ${min}-${max} 个汉字）。`
-      + `charsPerChapter=${value} is outside the valid range for Chinese shorts (${min}-${max} characters per chapter).`;
+  if (language === "en") {
+    return `charsPerChapter=${value} is outside the valid range for English shorts (${min}-${max} words per chapter).`;
+  }
+  if (language === "ko") {
+    return `charsPerChapter=${value}이(가) 한국어 단편의 허용 범위(장당 ${min}-${max}자)를 벗어났습니다.`;
+  }
+  return `charsPerChapter=${value} 超出中文短篇的合法范围（每章 ${min}-${max} 个汉字）。`;
 }
 
 // language 与 charsPerChapter 同时存在时按语言分段校验，让非法组合（如 en+1100）
@@ -78,7 +80,7 @@ export const ShortRunActionPayloadSchema = z.object({
   direction: z.string().min(1).optional(),
   reference: z.string().min(1).optional(),
   storyId: z.string().min(1).optional(),
-  language: z.enum(["zh", "en"]).optional(),
+  language: z.enum(["zh", "ko", "en"]).optional(),
   chapters: z.number().int().min(12).max(18).optional(),
   charsPerChapter: z.number().int().min(600).max(1200).optional(),
   cover: z.boolean().optional(),
@@ -246,8 +248,8 @@ export function isWriteNextInstruction(
 ): boolean {
   const trimmed = instruction.trim();
   const pattern = options.allowSlashWrite
-    ? /^(\/write|continue|继续|继续写|写下一章|write next|下一章|再来一章)$/i
-    : /^(continue|继续|继续写|写下一章|write next|下一章|再来一章)$/i;
+    ? /^(\/write|continue|继续|继续写|写下一章|write next|下一章|재来一章|다음 장|계속 써줘|계속)$/i
+    : /^(continue|继续|继续写|写下一章|write next|下一章|재来一章|다음 장|계속 써줘|계속)$/i;
   return pattern.test(trimmed);
 }
 
@@ -258,6 +260,10 @@ export function isExplicitWriteChapterCommand(instruction: string): boolean {
   const zhWriteChapter =
     /^(?:请|帮我|麻烦|现在|直接|开始|继续|接着|再)?\s*(?:写|续写|创作|生成)(?:出|一下)?\s*(?:第?\s*一\s*章|第?\s*1\s*章|下一章|一章|正文|章节)(?:\s|[，。,.！!？?；;：:]|$)/.test(trimmed);
   if (zhWriteChapter) return true;
+
+  const koWriteChapter =
+    /^(?:제발|좀|부탁|이제|바로|시작|계속|이어|다시)?\s*(?:쓰|잇|작성|생성)(?:어 줘|줘|해 줘)?\s*(?:제?\s*1\s*장|첫\s*장|다음\s*장|한\s*장|본문|챕터)(?:\s|[，。,.！!？?；;：:]|$)/.test(trimmed);
+  if (koWriteChapter) return true;
 
   return /^(?:please\s+)?(?:write|continue|draft|generate)\s+(?:(?:the\s+)?next\s+chapter|chapter(?:\s+(?:1|one))?)\b/i.test(trimmed);
 }

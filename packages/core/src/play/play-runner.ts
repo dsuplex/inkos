@@ -1,4 +1,4 @@
-import type { AgentContext } from "../agents/base.js";
+﻿import type { AgentContext } from "../agents/base.js";
 import {
   PlayActionIntentSchema,
   PlayMutationSchema,
@@ -24,7 +24,7 @@ export interface PlayActionInterpreterLike {
   readonly interpret: (input: {
     readonly input: string;
     readonly sceneBrief: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
   }) => Promise<PlayActionIntentInput>;
 }
 
@@ -34,7 +34,7 @@ export interface PlayWorldMutatorLike {
     readonly input: string;
     readonly action: PlayActionIntentInput;
     readonly context: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
   }) => Promise<PlayMutationInput>;
 }
 
@@ -46,7 +46,7 @@ export interface PlaySceneRendererLike {
     readonly stateBrief: string;
     readonly replayContext?: string;
     readonly mode?: "open" | "guided";
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
     readonly worldPremise?: string;
   }) => Promise<PlaySceneRender>;
 }
@@ -60,7 +60,7 @@ export interface PlaySceneReconcilerLike {
     readonly sceneText: string;
     readonly context: string;
     readonly stateBrief: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
     readonly worldPremise?: string;
   }) => Promise<PlayMutationInput>;
 }
@@ -151,7 +151,11 @@ export class PlayRunner {
     const language = world?.language ?? "zh";
     const action: PlayActionIntent = {
       actionKind: "look",
-      intent: language === "en" ? "Seed the opening state for the first playable scene." : "播种第一幕已成立的开场状态。",
+      intent: language === "en"
+        ? "Seed the opening state for the first playable scene."
+        : language === "ko"
+          ? "첫 플레이어블 장면의 오프닝 상태를 시드합니다."
+          : "播种第一幕已成立的开场状态。",
       manner: "",
       risk: "",
       ambiguity: "",
@@ -197,7 +201,11 @@ export class PlayRunner {
     const sceneBrief = await this.readOptionalProjection("projections/scene.md");
     const action = PlayActionIntentSchema.parse(await this.actionInterpreter.interpret({
       input: rawInput,
-      sceneBrief: sceneBrief || (language === "en" ? "A new turn begins; carry over the current world state." : "新回合开始，沿用当前世界状态。"),
+      sceneBrief: sceneBrief || (language === "en"
+        ? "A new turn begins; carry over the current world state."
+        : language === "ko"
+          ? "새 턴이 시작되며, 현재 세계 상태를 이어받습니다."
+          : "新回合开始，沿用当前世界状态。"),
       language,
     }));
     const worldContext = renderPlayWorldContext(world, language);
@@ -359,19 +367,20 @@ export class PlayRunner {
     };
   }
 
-  private async buildContextBrief(sceneBrief: string, language: "zh" | "en", world: PlayWorld | null): Promise<string> {
+  private async buildContextBrief(sceneBrief: string, language: "zh" | "ko" | "en", world: PlayWorld | null): Promise<string> {
     const stateBrief = await this.readOptionalProjection("projections/state.md");
     const isEn = language === "en";
+    const isKo = language === "ko";
     const worldContext = renderPlayWorldContext(world, language);
-    const sceneLabel = isEn ? "Current scene:" : "当前场景：";
-    const stateLabel = isEn ? "Current state:" : "当前状态：";
+    const sceneLabel = isEn ? "Current scene:" : isKo ? "현재 장면:" : "当前场景：";
+    const stateLabel = isEn ? "Current state:" : isKo ? "현재 상태:" : "当前状态：";
     const entityRoster = renderEntityRoster(readGraphSnapshot(this.db)?.entities ?? [], language);
     return [
       worldContext,
       entityRoster,
       sceneBrief ? `${sceneLabel}\n${sceneBrief}` : "",
       stateBrief ? `${stateLabel}\n${stateBrief}` : "",
-    ].filter(Boolean).join("\n\n") || (isEn ? "No persisted state yet." : "暂无持久化状态。");
+    ].filter(Boolean).join("\n\n") || (isEn ? "No persisted state yet." : isKo ? "아직 지속된 상태가 없습니다." : "暂无持久化状态。");
   }
 
   private async readOptionalProjection(relativePath: string): Promise<string> {
@@ -386,10 +395,11 @@ export class PlayRunner {
 function buildOpeningSeedInput(input: {
   readonly sceneText: string;
   readonly suggestedActions: readonly string[];
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
   readonly premise?: string;
 }): string {
   const isEn = input.language === "en";
+  const isKo = input.language === "ko";
   const lines = isEn
     ? [
         "Seed only the state that already exists at the opening of this playable world.",
@@ -399,21 +409,30 @@ function buildOpeningSeedInput(input: {
         `Opening scene:\n${input.sceneText}`,
         input.suggestedActions.length > 0 ? `Suggested player actions:\n${input.suggestedActions.map((action) => `- ${action}`).join("\n")}` : "",
       ]
-    : [
-        "只播种这个互动世界开场已经成立的状态。",
-        "不要推进时间，不要解谜，不要写新的回合剧情。",
-        "如果世界前提或开场正文说玩家已经拿着、带着、揣着、穿着、携带或开局拥有某个实物，这就是已成立状态：必须为该实物建立实体，并补一条 actor_player 指向它、value.role=\"holding\" 的持有边。不要把已持有实物只藏在玩家 summary 里。",
-        input.premise ? `世界前提：\n${input.premise}` : "",
-        `开场正文：\n${input.sceneText}`,
-        input.suggestedActions.length > 0 ? `建议动作：\n${input.suggestedActions.map((action) => `- ${action}`).join("\n")}` : "",
-      ];
+    : isKo
+      ? [
+          "이 플레이 가능한 세계의 오프닝에 이미 성립된 상태만 시드하세요.",
+          "시간을 전진시키지 말고, 수수께끼를 풀지 말고, 새로운 턴 내러티브를 쓰지 마세요.",
+          "세계 전제나 오프닝 본문에 플레이어가 이미 쥐고 있거나, 차고 있거나, 품에 넣고 있거나, 입고 있거나, 소지하고 있거나, 시작부터 가진 실물이 있다고 하면, 그것은 이미 성립된 상태입니다: 해당 실물에 엔티티를 만들고, actor_player가 그것을 잡고 있다는 value.role=\"holding\" 에지를 추가하세요. 이미 쥔 물건을 플레이어 summary 속에만 숨기지 마세요.",
+          input.premise ? `세계 전제:\n${input.premise}` : "",
+          `오프닝 장면:\n${input.sceneText}`,
+          input.suggestedActions.length > 0 ? `권장 행동:\n${input.suggestedActions.map((action) => `- ${action}`).join("\n")}` : "",
+        ]
+      : [
+          "只播种这个互动世界开场已经成立的状态。",
+          "不要推进时间，不要解谜，不要写新的回合剧情。",
+          "如果世界前提或开场正文说玩家已经拿着、带着、揣着、穿着、携带或开局拥有某个实物，这就是已成立状态：必须为该实物建立实体，并补一条 actor_player 指向它、value.role=\"holding\" 的持有边。不要把已持有实物只藏在玩家 summary 里。",
+          input.premise ? `世界前提：\n${input.premise}` : "",
+          `开场正文：\n${input.sceneText}`,
+          input.suggestedActions.length > 0 ? `建议动作：\n${input.suggestedActions.map((action) => `- ${action}`).join("\n")}` : "",
+        ];
   return lines.filter(Boolean).join("\n\n");
 }
 
 function buildReplayContext(input: {
   readonly originalInput: string;
   readonly replacementInput?: string;
-  readonly language: "zh" | "en";
+  readonly language: "zh" | "ko" | "en";
 }): string {
   const replacement = input.replacementInput?.trim();
   if (input.language === "en") {
@@ -427,6 +446,17 @@ function buildReplayContext(input: {
       "Concrete new facts, people, objects, locations, or clues must already be present in Applied changes or Current state summary.",
     ].filter(Boolean).join("\n");
   }
+  if (input.language === "ko") {
+    return [
+      "이것은 이전 턴을 다시 쓰는 것이며, 새로운 다음 턴이 아닙니다.",
+      `원래 플레이어 입력: ${input.originalInput}`,
+      replacement && replacement !== input.originalInput ? `사용자 대체 지시: ${replacement}` : "",
+      "대체 지시가 명시적으로 동작을 바꾸지 않는 한, 같은 플레이어 동작을 유지하세요.",
+      "현재 상태 요약이 권위입니다, 특히 시간 섹션: 시간을 되돌리지 말고, 다른 경과 시간을 지어내지 말고, 다른 타임스탬프를 쓰지 마세요.",
+      "플레이어가 하지 않은 새 동작을 추가하지 마세요. 표현, 감각적 디테일, 압박, 강조점을 바꿀 수 있지만, 동일한 적용된 상태 안에 머물러야 합니다.",
+      "구체적인 새 사실, 인물, 물체, 장소, 단서는 반드시 이미 적용된 변경 사항이나 현재 상태 요약에 이미 있어야 합니다.",
+    ].filter(Boolean).join("\n");
+  }
   return [
     "这是在重写上一回合，不是推进新的下一回合。",
     `原玩家动作：${input.originalInput}`,
@@ -438,21 +468,22 @@ function buildReplayContext(input: {
   ].filter(Boolean).join("\n");
 }
 
-function renderPlayWorldContext(world: PlayWorld | null | undefined, language: "zh" | "en"): string {
+function renderPlayWorldContext(world: PlayWorld | null | undefined, language: "zh" | "ko" | "en"): string {
   if (!world) return "";
   const premise = world.premise?.trim();
   const worldContract = world.worldContract?.trim();
   const visualContract = world.visualContract?.trim();
   const isEn = language === "en";
+  const isKo = language === "ko";
   const blocks = [
     premise
-      ? `${isEn ? "World setting" : "世界设定"}:\n${premise}`
+      ? `${isEn ? "World setting" : isKo ? "세계 설정" : "世界设定"}:\n${premise}`
       : "",
     worldContract
-      ? `${isEn ? "World contract (high priority; obey before genre defaults)" : "世界契约（高优先级，先于题材惯例）"}:\n${worldContract}`
+      ? `${isEn ? "World contract (high priority; obey before genre defaults)" : isKo ? "세계 계약(고우선순위, 장르 관례보다 우선)" : "世界契约（高优先级，先于题材惯例）"}:\n${worldContract}`
       : "",
     visualContract
-      ? `${isEn ? "Visual contract (for scene and image consistency)" : "视觉契约（保持场景和配图一致）"}:\n${visualContract}`
+      ? `${isEn ? "Visual contract (for scene and image consistency)" : isKo ? "시각 계약(장면 및 이미지 일관성 유지)" : "视觉契约（保持场景和配图一致）"}:\n${visualContract}`
       : "",
   ].filter(Boolean);
   return blocks.join("\n\n");
@@ -547,18 +578,21 @@ function isEmptyMutationSupplement(mutation: PlayMutation): boolean {
     && !mutation.blocked;
 }
 
-function renderEntityRoster(entities: ReadonlyArray<PlayEntity>, language: "zh" | "en"): string {
+function renderEntityRoster(entities: ReadonlyArray<PlayEntity>, language: "zh" | "ko" | "en"): string {
   if (entities.length === 0) {
     return "";
   }
   const isEn = language === "en";
+  const isKo = language === "ko";
   const header = isEn
     ? "Current entity roster (reuse these ids; do not recreate the same person/thing):"
-    : "当前实体名册（复用这些 id；不要把同一个人/物换新 id 重建）：";
+    : isKo
+      ? "현재 엔티티 명부(이 id들을 재사용하세요; 같은 사람/물건에 새 id를 만들지 마세요):"
+      : "当前实体名册（复用这些 id；不要把同一个人/物换新 id 重建）：";
   const lines = entities.slice(0, 40).map((entity) => {
-    const detail = [entity.summary, entity.status ? `${isEn ? "status" : "状态"}: ${entity.status}` : ""]
+    const detail = [entity.summary, entity.status ? `${isEn ? "status" : isKo ? "상태" : "状态"}: ${entity.status}` : ""]
       .filter(Boolean)
-      .join(isEn ? "; " : "；");
+      .join(isEn ? "; " : isKo ? "；" : "；");
     return `- ${entity.id} [${entity.type}]: ${entity.label}${detail ? ` — ${clampRosterText(detail)}` : ""}`;
   });
   return [header, ...lines].join("\n");

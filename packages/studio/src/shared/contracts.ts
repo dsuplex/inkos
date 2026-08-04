@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared TypeScript contracts for Studio API/UI communication.
  * Ported from PR #96 (Te9ui1a) — prevents client/server type drift.
  */
@@ -42,7 +42,7 @@ export interface BookSummary {
 export interface BookDetail extends BookSummary {
   readonly createdAt: string;
   readonly chapterWordCount: number;
-  readonly language: "zh" | "en" | null;
+  readonly language: "zh" | "ko" | "en" | null;
 }
 
 // --- Chapters ---

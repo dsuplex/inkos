@@ -1,4 +1,4 @@
-import { AsyncLocalStorage } from "node:async_hooks";
+﻿import { AsyncLocalStorage } from "node:async_hooks";
 import type { LLMClient, OnStreamProgress } from "../llm/provider.js";
 import { chatCompletion, createLLMClient } from "../llm/provider.js";
 import type { Logger } from "../utils/logger.js";
@@ -107,7 +107,9 @@ function formatImportedChapter(
 ): string {
   return language === "en"
     ? `Chapter ${index + 1}: ${chapter.title}\n\n${content}`
-    : `第${index + 1}章 ${chapter.title}\n\n${content}`;
+    : language === "ko"
+      ? `${index + 1}장 ${chapter.title}\n\n${content}`
+      : `第${index + 1}章 ${chapter.title}\n\n${content}`;
 }
 
 function estimateImportFullTextLength(
@@ -124,7 +126,9 @@ function excerptHeadTail(text: string, maxChars: number, language: LengthLanguag
   const omitted = clean.length - headChars - tailChars;
   const marker = language === "en"
     ? `\n\n[... ${omitted} chars omitted for import-context budget ...]\n\n`
-    : `\n\n【中间省略 ${omitted} 字，用于控制导入上下文预算】\n\n`;
+    : language === "ko"
+      ? `\n\n[... 중간 ${omitted}자 생략, 임포트 컨텍스트 예산 확보 ...]\n\n`
+      : `\n\n【中间省略 ${omitted} 字，用于控制导入上下文预算】\n\n`;
   return `${clean.slice(0, headChars).trimEnd()}${marker}${clean.slice(-tailChars).trimStart()}`;
 }
 
@@ -157,7 +161,9 @@ function buildTitleCatalog(
   const lines = chapters.map((chapter, index) =>
     language === "en"
       ? `- Chapter ${index + 1}: ${chapter.title} (${chapter.content.length} chars)`
-      : `- 第${index + 1}章：${chapter.title}（${chapter.content.length}字）`,
+      : language === "ko"
+        ? `- ${index + 1}장: ${chapter.title} (${chapter.content.length}자)`
+        : `- 第${index + 1}章：${chapter.title}（${chapter.content.length}字）`,
   );
   const joined = lines.join("\n");
   if (joined.length <= maxChars) return joined;
@@ -182,7 +188,9 @@ function buildTitleCatalog(
   const omitted = lines.length - head.length - tail.length;
   const marker = language === "en"
     ? `- ... ${omitted} chapter titles omitted ...`
-    : `- ……中间 ${omitted} 个章节标题省略……`;
+    : language === "ko"
+      ? `- ... ${omitted}개 장 제목 생략 ...`
+      : `- ……中间 ${omitted} 个章节标题省略……`;
   return [...head, marker, ...tail].join("\n");
 }
 
@@ -194,7 +202,7 @@ function buildTitleCatalog(
 export function buildSpinoffFoundationContext(
   parentCanon: string,
   direction: string | undefined,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): string {
   const dir = direction?.trim();
   if (language === "en") {
@@ -203,6 +211,14 @@ export function buildSpinoffFoundationContext(
       "Reuse the established characters, world, and rules from the parent canon below. Tell an INDEPENDENT side plot — a bonus arc, a character backstory, or a what-if — that does NOT advance or contradict the parent work's main storyline.",
       dir ? `\n## Side-story direction\n${dir}` : "",
       `\n## Parent canon (reuse these characters and settings)\n${parentCanon}`,
+    ].filter(Boolean).join("\n");
+  }
+  if (language === "ko") {
+    return [
+      "## 이것은 사이드 스토리(fanfic·番外)입니다",
+      "아래 본편 정전(fanfic canon)에 이미 정립된 등장인물, 세계관, 규칙을 재사용하십시오. 독립적인 사이드 플롯(보너스 아크, 캐릭터 프리퀄, what-if 등)을 쓰되, 본편의 메인 스토리를 진행시키거나 배치되지 않게 하십시오.",
+      dir ? `\n## 사이드 스토리 방향\n${dir}` : "",
+      `\n## 본편 정전(이 인물들과 설정을 재사용)\n${parentCanon}`,
     ].filter(Boolean).join("\n");
   }
   return [
@@ -235,13 +251,27 @@ export function buildImportFoundationSource(
         "",
         `The imported book has ${chapters.length} chapters. To avoid overflowing the LLM context, this package keeps the opening chapters, ending/continuation point, selected middle anchors, and a capped title catalog. Full chapters will still be replayed sequentially after foundation generation to rebuild truth files.`,
       ].join("\n")
-    : [
-        "## 导入基础设定压缩资料包",
-        "",
-        `本次导入共 ${chapters.length} 章。为避免超出 LLM 上下文，这里保留开篇、结尾续写点、少量中段锚点和标题目录；完整章节将在后续顺序回放中逐章分析并沉淀 truth files。`,
-      ].join("\n");
-  const catalogTitle = language === "en" ? "## Capped chapter title catalog" : "## 章节标题目录（截断）";
-  const anchorsTitle = language === "en" ? "## Source excerpts for architecture" : "## 用于反推基础设定的正文摘录";
+    : language === "ko"
+      ? [
+          "## 임포트 기반설정 원본 패키지",
+          "",
+          `임포트된 작품은 ${chapters.length}장입니다. LLM 컨텍스트를 초과하지 않도록 이 패키지에는 도입부 챕터, 결말/이어쓰기 지점, 일부 중간 앵커, 제한된 제목 카탈로그만 포함합니다. 전체 챕터는 기반설정 생성 후 순차 리플레이로 다시 재생되며 truth files(진실 파일)를 재구축합니다.`,
+        ].join("\n")
+      : [
+          "## 导入基础设定压缩资料包",
+          "",
+          `本次导入共 ${chapters.length} 章。为避免超出 LLM 上下文，这里保留开篇、结尾续写点、少量中段锚点和标题目录；完整章节将在后续顺序回放中逐章分析并沉淀 truth files。`,
+        ].join("\n");
+  const catalogTitle = language === "en"
+    ? "## Capped chapter title catalog"
+    : language === "ko"
+      ? "## 제한된 챕터 제목 카탈로그"
+      : "## 章节标题目录（截断）";
+  const anchorsTitle = language === "en"
+    ? "## Source excerpts for architecture"
+    : language === "ko"
+      ? "## 기반설정 도출용 본문 발췌"
+      : "## 用于反推基础设定的正文摘录";
   const anchorText = anchorIndexes
     .map((index) => {
       const chapter = chapters[index]!;
@@ -538,7 +568,7 @@ export class PipelineRunner {
     readonly mode: "original" | "fanfic" | "series";
     readonly sourceCanon?: string;
     readonly styleGuide?: string;
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "ko" | "en";
     readonly stageLanguage: LengthLanguage;
     readonly targetChapters?: number;
     readonly maxRetries?: number;
@@ -605,13 +635,15 @@ export class PipelineRunner {
       }>;
       readonly overallFeedback: string;
     },
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): string {
     const dimensionLines = review.dimensions
       .map((dimension) => (
         language === "en"
           ? `- ${dimension.name} [${dimension.score}]: ${dimension.feedback}`
-          : `- ${dimension.name}（${dimension.score}分）：${dimension.feedback}`
+          : language === "ko"
+            ? `- ${dimension.name} [${dimension.score}점]: ${dimension.feedback}`
+            : `- ${dimension.name}（${dimension.score}分）：${dimension.feedback}`
       ))
       .join("\n");
 
@@ -623,8 +655,16 @@ export class PipelineRunner {
           "## Dimension Notes",
           dimensionLines || "- none",
         ].join("\n")
-      : [
-          "## 总评",
+      : language === "ko"
+        ? [
+            "## 총평",
+            review.overallFeedback,
+            "",
+            "## 항목별 지적",
+            dimensionLines || "- 없음",
+          ].join("\n")
+        : [
+            "## 总评",
           review.overallFeedback,
           "",
           "## 分项问题",
@@ -744,7 +784,7 @@ export class PipelineRunner {
     this.logStage(stageLanguage, { zh: "生成基础设定", en: "generating foundation" });
     const { profile: gp } = await this.loadGenreProfile(book.genre);
     const reviewer = new FoundationReviewerAgent(this.agentCtxFor("foundation-reviewer", book.id));
-    const resolvedLanguage = (book.language ?? gp.language) === "en" ? "en" as const : "zh" as const;
+    const resolvedLanguage = book.language ?? gp.language;
     const foundation = await this.generateAndReviewFoundation({
       generate: (reviewFeedback) => architect.generateFoundation(
         book,
@@ -874,7 +914,7 @@ export class PipelineRunner {
     });
 
     const reviewer = new FoundationReviewerAgent(this.agentCtxFor("foundation-reviewer", bookId));
-    const resolvedLanguage = (book.language ?? "zh") === "en" ? "en" as const : "zh" as const;
+    const resolvedLanguage = book.language ?? "zh";
     try {
       const review = await reviewer.review({
         foundation,
@@ -989,7 +1029,7 @@ export class PipelineRunner {
     const reviewer = new FoundationReviewerAgent(this.agentCtxFor("foundation-reviewer", book.id));
     this.logStage(stageLanguage, { zh: "生成同人基础设定", en: "generating fanfic foundation" });
     const { profile: gp } = await this.loadGenreProfile(book.genre);
-    const resolvedLanguage = (book.language ?? gp.language) === "en" ? "en" as const : "zh" as const;
+    const resolvedLanguage = book.language ?? gp.language;
     const foundation = await this.generateAndReviewFoundation({
       generate: (reviewFeedback) => architect.generateFanficFoundation(
         book,
@@ -1047,7 +1087,7 @@ export class PipelineRunner {
     const architect = new ArchitectAgent(this.agentCtxFor("architect", book.id));
     const reviewer = new FoundationReviewerAgent(this.agentCtxFor("foundation-reviewer", book.id));
     const { profile: gp } = await this.loadGenreProfile(book.genre);
-    const resolvedLanguage = (book.language ?? gp.language) === "en" ? "en" as const : "zh" as const;
+    const resolvedLanguage = book.language ?? gp.language;
     const spinoffContext = buildSpinoffFoundationContext(parentCanon, direction, resolvedLanguage);
 
     this.logStage(stageLanguage, { zh: "生成番外基础设定", en: "generating side-story foundation" });
@@ -1171,7 +1211,9 @@ export class PipelineRunner {
       const resolvedLang = book.language ?? gp.language;
       const heading = resolvedLang === "en"
         ? `# Chapter ${chapterNumber}: ${draftOutput.title}`
-        : `# 第${chapterNumber}章 ${draftOutput.title}`;
+        : resolvedLang === "ko"
+          ? `# ${chapterNumber}장 ${draftOutput.title}`
+          : `# 第${chapterNumber}章 ${draftOutput.title}`;
       await writeFile(filePath, `${heading}\n\n${draftOutput.content}`, "utf-8");
 
       // Save truth files
@@ -1575,7 +1617,9 @@ export class PipelineRunner {
       const reviseLang = book.language ?? gp.language;
       const reviseHeading = reviseLang === "en"
         ? `# Chapter ${targetChapter}: ${chapterMeta.title}`
-        : `# 第${targetChapter}章 ${chapterMeta.title}`;
+        : reviseLang === "ko"
+          ? `# ${targetChapter}장 ${chapterMeta.title}`
+          : `# 第${targetChapter}章 ${chapterMeta.title}`;
       await writeFile(
         join(chaptersDir, existingFile),
         `${reviseHeading}\n\n${normalizedRevision.content}`,
@@ -1601,7 +1645,9 @@ export class PipelineRunner {
       // Update index
       const downstreamRevisionNotice = language === "en"
         ? `[warning] Chapter ${targetChapter} changed; re-review this downstream chapter for continuity.`
-        : `[warning] 第${targetChapter}章已重写，请重新检查本章与前文的连续性。`;
+        : language === "ko"
+          ? `[warning] ${targetChapter}장이 변경되었습니다. 연속성 확인을 위해 이 하류 챕터를 다시 검토하십시오.`
+          : `[warning] 第${targetChapter}章已重写，请重新检查本章与前文的连续性。`;
       const updatedIndex = index.map((ch) => {
         if (ch.number === targetChapter) {
           return {
@@ -1871,7 +1917,9 @@ export class PipelineRunner {
         issues: [],
         summary: pipelineLang === "en"
           ? "Not reviewed yet (manual mode: stopped after writing — run review when ready)."
-          : "尚未审查（手动模式：写完即停，需要时点“审查”）。",
+          : pipelineLang === "ko"
+            ? "아직 검토되지 않음 (수동 모드: 쓰고 나서 멈춤 — 준비되면 검토를 실행하세요)."
+            : "尚未审查（手动模式：写完即停，需要时点“审查”）。",
       };
     } else {
       const auditor = new ContinuityAuditor(this.agentCtxFor("auditor", bookId));
@@ -1946,7 +1994,7 @@ export class PipelineRunner {
           const summariesRaw = await readFile(join(promotionStoryDir, "chapter_summaries.md"), "utf-8").catch(() => "");
           const promotionResult = rerunPromotionPass(hooks, summariesRaw);
           if (promotionResult.updated) {
-            const ledgerLang: "zh" | "en" = /[\u4e00-\u9fff]/.test(ledgerRaw) ? "zh" : "en";
+            const ledgerLang: "zh" | "ko" | "en" = /[\uac00-\ud7af]/u.test(ledgerRaw) ? "ko" : /[\u4e00-\u9fff]/.test(ledgerRaw) ? "zh" : "en";
             await writeFile(ledgerPath, renderHookSnapshot([...promotionResult.hooks], ledgerLang), "utf-8");
             this.config.logger?.info(`[promotion] ${promotionResult.flippedCount} hook(s) promoted after chapter ${chapterNumber}`);
           }
@@ -1993,7 +2041,9 @@ export class PipelineRunner {
     if (persistenceOutput.title !== output.title) {
       const description = pipelineLang === "en"
         ? `Chapter title "${output.title}" was auto-adjusted to "${persistenceOutput.title}".`
-        : `章节标题"${output.title}"已自动调整为"${persistenceOutput.title}"。`;
+        : pipelineLang === "ko"
+          ? `챕터 제목 "${output.title}"이(가) "${persistenceOutput.title}"(으)로 자동 조정되었습니다.`
+          : `章节标题"${output.title}"已自动调整为"${persistenceOutput.title}"。`;
       this.config.logger?.warn(`[title] ${description}`);
       auditResult = {
         ...auditResult,
@@ -2003,7 +2053,9 @@ export class PipelineRunner {
           description,
           suggestion: pipelineLang === "en"
             ? "If the auto-renamed title is weak, revise the chapter title manually."
-            : "如果自动改名不理想，可以在后续手动修订章节标题。",
+            : pipelineLang === "ko"
+              ? "자동으로 변경된 제목이 마음에 들지 않으면 챕터 제목을 나중에 직접 수정하십시오."
+              : "如果自动改名不理想，可以在后续手动修订章节标题。",
         }],
       };
     }
@@ -2482,7 +2534,7 @@ export class PipelineRunner {
 
     const book = await this.state.loadBookConfig(bookId);
     const { profile: gp } = await this.loadGenreProfile(book.genre);
-    const lang = (book.language ?? gp.language) === "en" ? "en" as const : "zh" as const;
+    const lang = book.language ?? gp.language;
 
     // Statistical fingerprint (language-aware: words for en, characters for zh)
     const profile = analyzeStyle(sample, sourceName, lang);
@@ -2494,7 +2546,9 @@ export class PipelineRunner {
         language: lang,
         reason: lang === "en"
           ? `The sample is short (${sample.length} chars), so this guide uses the statistical fingerprint instead of LLM qualitative extraction.`
-          : `样本文本较短（${sample.length}字），本次先使用统计指纹生成文风指南，不强行调用 LLM 做定性拆解。`,
+          : lang === "ko"
+            ? `샘플 텍스트가 짧아서(${sample.length}자) 이 가이드는 LLM 정성 분석 대신 통계적 지문을 사용합니다.`
+            : `样本文本较短（${sample.length}字），本次先使用统计指纹生成文风指南，不强行调用 LLM 做定性拆解。`,
       });
     } else {
       try {
@@ -2528,6 +2582,35 @@ Output format (Markdown):
 (any personal writing habits worth imitating)
 
 Base the analysis on the text's actual features, not generalities. Support each section with 1-2 quoted lines from the original.`
+          : lang === "ko"
+            ? `당신은 문학 스타일 분석 전문가입니다. 참조 텍스트의 글쓰기 스타일을 분석하여 모방할 수 있는 정성적 특징을 추출하십시오.
+
+출력 형식 (Markdown):
+## 서사적 목소리와 톤
+(냉정/격렬/풍자/온정/... , 원문에서 1-2줄 인용 포함)
+
+## 대화 스타일
+(캐릭터 말투의 공통 특징: 문장 길이, 말버릇 경향, 방언 흔적, 대화 리듬)
+
+## 장면 묘사 특징
+(오감 선호, 이미지 선택, 묘사 밀도, 환경과 감정의 연관 방식)
+
+## 전환과 연결 기법
+(장면 전환 방식, 시간 점프 처리, 단락 간 전이 특징)
+
+## 리듬 특징
+(장문/단문 분포, 단락 길이 선호, 클라이맥스와 고요의 교대 방식)
+
+## 어휘 선호
+(빈출 특징 어휘, 비유/수사 경향, 구어체 정도)
+
+## 감정 표현 방식
+(직접적 서정 vs 행동 외화, 내면 독백의 빈도와 스타일)
+
+## 독특한 습관
+(모방할 가치가 있는 개인적 집필 습관)
+
+분석은 원문의 실제 특징에 근거해야 하며 일반론에 그치면 안 됩니다. 각 섹션은 원문에서 1-2줄을 인용해 뒷받침하십시오.`
           : `你是一位文学风格分析专家。分析参考文本的写作风格，提取可供模仿的定性特征。
 
 输出格式（Markdown）：
@@ -2558,7 +2641,9 @@ Base the analysis on the text's actual features, not generalities. Support each 
 分析必须基于原文实际特征，不要泛泛而谈。每个部分用1-2个原文例句佐证。`;
         const styleUserPrompt = lang === "en"
           ? `Analyze the writing style of the following reference text:\n\n${sample}`
-          : `分析以下参考文本的写作风格：\n\n${sample}`;
+          : lang === "ko"
+            ? `다음 참조 텍스트의 글쓰기 스타일을 분석하십시오:\n\n${sample}`
+            : `分析以下参考文本的写作风格：\n\n${sample}`;
         const response = await chatCompletion(this.config.client, this.config.model, [
           { role: "system", content: styleSystemPrompt },
           { role: "user", content: styleUserPrompt },
@@ -2569,14 +2654,18 @@ Base the analysis on the text's actual features, not generalities. Support each 
               language: lang,
               reason: lang === "en"
                 ? "The LLM returned empty style analysis; using the statistical fingerprint fallback."
-                : "LLM 未返回有效文风分析，本次使用统计指纹兜底生成文风指南。",
+                : lang === "ko"
+                  ? "LLM이 유효한 스타일 분석을 반환하지 않아 통계 지문으로 대체해 가이드를 생성합니다."
+                  : "LLM 未返回有效文风分析，本次使用统计指纹兜底生成文风指南。",
             });
       } catch (error) {
         qualitativeGuide = this.buildDeterministicStyleGuide(profile, {
           language: lang,
           reason: lang === "en"
             ? `LLM qualitative extraction failed: ${error instanceof Error ? error.message : String(error)}. Using the statistical fingerprint fallback.`
-            : `LLM 定性拆解失败：${error instanceof Error ? error.message : String(error)}。本次使用统计指纹兜底生成文风指南。`,
+            : lang === "ko"
+              ? `LLM 정성 분석에 실패했습니다: ${error instanceof Error ? error.message : String(error)}. 통계 지문으로 대체해 가이드를 생성합니다.`
+              : `LLM 定性拆解失败：${error instanceof Error ? error.message : String(error)}。本次使用统计指纹兜底生成文风指南。`,
         });
       }
     }
@@ -2597,7 +2686,7 @@ Base the analysis on the text's actual features, not generalities. Support each 
       readonly rhetoricalFeatures: ReadonlyArray<string>;
       readonly sourceName?: string;
     },
-    options: { readonly language: "zh" | "en"; readonly reason: string },
+    options: { readonly language: "zh" | "ko" | "en"; readonly reason: string },
   ): string {
     if (options.language === "en") {
       return [
@@ -2618,6 +2707,28 @@ Base the analysis on the text's actual features, not generalities. Support each 
         "- Treat this as a lightweight style fingerprint, not a full imitation bible.",
         "- Keep sentence and paragraph rhythm close to the sample when drafting.",
         "- If this guide feels too thin, import a longer excerpt later; the file will be replaced.",
+      ].join("\n");
+    }
+
+    if (options.language === "ko") {
+      return [
+        "# 문풍 가이드",
+        "",
+        `> ${options.reason}`,
+        "",
+        "## 통계 스타일 지문",
+        `- 출처: ${profile.sourceName ?? "unknown"}`,
+        `- 평균 문장 길이: ${profile.avgSentenceLength}`,
+        `- 문장 길이 변동: ${profile.sentenceLengthStdDev}`,
+        `- 평균 단락 길이: ${profile.avgParagraphLength}`,
+        `- 어휘 다양성: ${Math.round(profile.vocabularyDiversity * 100)}%`,
+        profile.topPatterns.length > 0 ? `- 빈출 문두/패턴: ${profile.topPatterns.join(", ")}` : "- 빈출 문두/패턴: 샘플 내 뚜렷하지 않음",
+        profile.rhetoricalFeatures.length > 0 ? `- 수사적 특징: ${profile.rhetoricalFeatures.join(", ")}` : "- 수사적 특징: 샘플 내 뚜렷하지 않음",
+        "",
+        "## 사용 방법",
+        "- 이것은 가벼운 문풍 지문이지 완전한 모방 바이블이 아닙니다.",
+        "- 이후 집필에서는 문장 길이, 단락 길이, 리듬 변동, 보이는 수사를 우선 참고하십시오.",
+        "- 더 안정적인 정성 분석이 필요하면 더 긴 원문을 나중에 임포트해 이 파일을 교체할 수 있습니다.",
       ].join("\n");
     }
 
@@ -2850,7 +2961,7 @@ ${matrix}`,
               generate: (reviewFeedback) => architect.generateFoundationFromImport(book, foundationSource, undefined, reviewFeedback, { importMode: "series" }),
               reviewer: new FoundationReviewerAgent(this.agentCtxFor("foundation-reviewer", input.bookId)),
               mode: "series",
-              language: resolvedLanguage === "en" ? "en" : "zh",
+              language: resolvedLanguage,
               stageLanguage: resolvedLanguage,
               targetChapters: book.targetChapters,
             })
@@ -3132,6 +3243,23 @@ ${matrix}`,
       ].join("\n");
     }
 
+    if (language === "ko") {
+      return [
+        "# 현재 상태",
+        "",
+        "| 필드 | 값 |",
+        "| --- | --- |",
+        "| 현재 챕터 | 0 |",
+        "| 현재 위치 | (미설정) |",
+        "| 주인공 상태 | (미설정) |",
+        "| 현재 목표 | (미설정) |",
+        "| 현재 제약 | (미설정) |",
+        "| 현재 아군/적 | (미설정) |",
+        "| 현재 갈등 | (미설정) |",
+        "",
+      ].join("\n");
+    }
+
     return [
       "# 当前状态",
       "",
@@ -3154,6 +3282,16 @@ ${matrix}`,
         "# Pending Hooks",
         "",
         "| hook_id | start_chapter | type | status | last_advanced_chapter | expected_payoff | notes |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+        "",
+      ].join("\n");
+    }
+
+    if (language === "ko") {
+      return [
+        "# 보류 훅 (Pending Hooks)",
+        "",
+        "| hook_id | 시작 챕터 | 유형 | 상태 | 최근 진행 | 예상 회수 | 비고 |",
         "| --- | --- | --- | --- | --- | --- | --- |",
         "",
       ].join("\n");

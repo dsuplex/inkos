@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChapterSummariesStateSchema,
   CurrentStateStateSchema,
   HooksStateSchema,
@@ -192,7 +192,7 @@ function preferRicherText(primary: string, fallback: string): string {
 
 function applyCurrentStatePatch(
   currentState: CurrentStateState,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
   delta: RuntimeStateDelta,
 ): CurrentStateState {
   if (!delta.currentStatePatch) {
@@ -212,14 +212,23 @@ function applyCurrentStatePatch(
       currentAlliances: ["Current Alliances", "Current Relationships", "当前敌我"],
       currentConflict: ["Current Conflict", "当前冲突"],
     }
-    : {
-      currentLocation: ["当前位置", "Current Location"],
-      protagonistState: ["主角状态", "Protagonist State"],
-      currentGoal: ["当前目标", "Current Goal"],
-      currentConstraint: ["当前限制", "Current Constraint"],
-      currentAlliances: ["当前敌我", "Current Alliances", "Current Relationships"],
-      currentConflict: ["当前冲突", "Current Conflict"],
-    };
+    : language === "ko"
+      ? {
+        currentLocation: ["현재 위치", "Current Location", "当前位置"],
+        protagonistState: ["주인공 상태", "Protagonist State", "主角状态"],
+        currentGoal: ["현재 목표", "Current Goal", "当前目标"],
+        currentConstraint: ["현재 제약", "Current Constraint", "当前限制"],
+        currentAlliances: ["현재 관계", "Current Alliances", "Current Relationships", "当前敌我"],
+        currentConflict: ["현재 갈등", "Current Conflict", "当前冲突"],
+      }
+      : {
+        currentLocation: ["当前位置", "Current Location"],
+        protagonistState: ["主角状态", "Protagonist State"],
+        currentGoal: ["当前目标", "Current Goal"],
+        currentConstraint: ["当前限制", "Current Constraint"],
+        currentAlliances: ["当前敌我", "Current Alliances", "Current Relationships"],
+        currentConflict: ["当前冲突", "Current Conflict"],
+      };
 
   for (const [patchKey, aliases] of Object.entries(labels) as Array<[
     keyof typeof labels,

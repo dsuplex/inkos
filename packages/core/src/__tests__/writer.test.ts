@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+﻿import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -72,7 +72,7 @@ describe("WriterAgent", () => {
           readonly activeOverrides: readonly [];
         };
         readonly lengthSpec: ReturnType<typeof buildLengthSpec>;
-        readonly language?: "zh" | "en";
+        readonly language?: "zh" | "ko" | "en";
         readonly externalContext?: string;
       }): string;
     }).buildGovernedUserPrompt({
@@ -138,7 +138,7 @@ describe("WriterAgent", () => {
         readonly subplotBoard: string;
         readonly emotionalArcs: string;
         readonly characterMatrix: string;
-        readonly language?: "zh" | "en";
+        readonly language?: "zh" | "ko" | "en";
       }): string;
     }).buildUserPrompt({
       chapterNumber: 88,

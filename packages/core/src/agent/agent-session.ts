@@ -306,10 +306,13 @@ function agentCacheKey(projectRoot: string, sessionId: string): string {
 function buildAttachmentUserBlock(attachments: ReadonlyArray<AgentSessionAttachment> | undefined, language: string): string {
   if (!attachments?.length) return "";
   const isEn = language === "en";
+  const isKo = language === "ko";
   const lines = [
     isEn
       ? "\n\n## Uploaded Files (host-provided, user-authorized)"
-      : "\n\n## 用户上传文件（宿主已接收，用户授权本轮使用）",
+      : isKo
+        ? "\n\n## 업로드된 파일 (호스트 수신, 사용자 본 회차 사용 권한 부여)"
+        : "\n\n## 用户上传文件（宿主已接收，用户授权本轮使用）",
   ];
   for (const attachment of attachments) {
     lines.push(`\n### ${attachment.filename}`);
@@ -318,16 +321,18 @@ function buildAttachmentUserBlock(attachments: ReadonlyArray<AgentSessionAttachm
     lines.push(`- size: ${attachment.size}`);
     if (attachment.storedPath) lines.push(`- stored_path: ${attachment.storedPath}`);
     if (attachment.text) {
-      lines.push(isEn ? "\nContent:" : "\n内容：");
+      lines.push(isEn ? "\nContent:" : isKo ? "\n내용:" : "\n内容：");
       lines.push("```");
       lines.push(attachment.text);
       lines.push("```");
     } else if (attachment.image) {
-      lines.push(isEn ? "- image: attached as multimodal input" : "- 图片：已作为多模态输入附加");
+      lines.push(isEn ? "- image: attached as multimodal input" : isKo ? "- 이미지: 다중 모달 입력으로 첨부됨" : "- 图片：已作为多模态输入附加");
     } else {
       lines.push(isEn
         ? "- content: stored only; no extractor is available for this MIME type yet"
-        : "- 内容：已保存；当前 MIME 类型暂未配置文本抽取器");
+        : isKo
+          ? "- 내용: 저장만 됨; 현재 MIME 유형에 대한 텍스트 추출기는 아직 준비되지 않음"
+          : "- 内容：已保存；当前 MIME 类型暂未配置文本抽取器");
     }
   }
   return lines.join("\n");
@@ -565,9 +570,13 @@ function looksLikeChapterRevisionPlan(text: string): boolean {
 }
 
 function bookRawChapterBoundaryText(language: string): string {
-  return language === "zh"
-    ? "这次模型输出了疑似章节正文的聊天文本，但没有调用落盘工具。InkOS 不会把聊天正文当成已保存章节：如果要续写新章，请发送“继续写下一章”；如果要修改旧章，请发送“重写/修订第 N 章 + 具体要求”，系统会走 reviser/writer 管线落盘。"
-    : "The model produced chapter-like prose in chat without calling a persistence tool. InkOS will not treat chat prose as a saved chapter. Ask to write the next chapter only when you want to append; ask to rewrite/revise chapter N with concrete requirements when you want to change existing chapters.";
+  if (language === "en") {
+    return "The model produced chapter-like prose in chat without calling a persistence tool. InkOS will not treat chat prose as a saved chapter. Ask to write the next chapter only when you want to append; ask to rewrite/revise chapter N with concrete requirements when you want to change existing chapters.";
+  }
+  if (language === "ko") {
+    return "모델이 채팅에서 챕터 같은 본문을 생성했으나 지속 도구를 호출하지 않았습니다. InkOS는 채팅 본문을 저장된 챕터로 취급하지 않습니다. 다음 챕터를 이어쓰려면 '다음 장 계속 써줘'라고, 기존 챕터를 수정하려면 'N장 다시 써줘/수정해줘 + 구체적 요구'라고 요청하세요. 시스템이 reviser/writer 파이프라인으로 저장합니다.";
+  }
+  return "这次模型输出了疑似章节正文的聊天文本，但没有调用落盘工具。InkOS 不会把聊天正文当成已保存章节：如果要续写新章，请发送“继续写下一章”；如果要修改旧章，请发送“重写/修订第 N 章 + 具体要求”，系统会走 reviser/writer 管线落盘。";
 }
 
 function replaceAssistantText(message: AssistantMessage, text: string): void {
@@ -819,7 +828,7 @@ function createAgentToolsForMode(params: CreateAgentToolsForModeParams) {
 }
 
 function createModeTools(params: CreateAgentToolsForModeParams) {
-  const lang = params.language === "en" ? "en" : "zh";
+  const lang = params.language === "en" ? "en" : params.language === "ko" ? "ko" : "zh";
   const subAgentTool = createSubAgentTool(params.pipeline, params.bookId, params.projectRoot, {
     actionPayload: params.actionPayload,
     language: lang,

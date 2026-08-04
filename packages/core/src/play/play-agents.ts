@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { BaseAgent, type AgentContext } from "../agents/base.js";
 import {
   PlayActionIntentSchema,
@@ -13,7 +13,7 @@ import { appendPromptPackGuidance } from "../prompts/prompt-pack.js";
 export interface PlayActionInterpreterInput {
   readonly input: string;
   readonly sceneBrief: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
 }
 
 export interface PlayWorldMutatorInput {
@@ -21,7 +21,7 @@ export interface PlayWorldMutatorInput {
   readonly input: string;
   readonly action: PlayActionIntentInput;
   readonly context: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
 }
 
 export interface PlaySceneRenderInput {
@@ -30,7 +30,7 @@ export interface PlaySceneRenderInput {
   readonly mutationSummary: string;
   readonly stateBrief: string;
   readonly replayContext?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   // The world's premise — a persistent anchor so the scene stays in the
   // established era/setting/genre and doesn't drift (a modern shop must not grow
   // night-watchmen and oil lamps).
@@ -45,7 +45,7 @@ export interface PlaySceneReconcileInput {
   readonly sceneText: string;
   readonly context: string;
   readonly stateBrief: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly worldPremise?: string;
 }
 
@@ -285,7 +285,7 @@ function emptyReconciliation(turn: number, actionKind: PlayActionIntent["actionK
   };
 }
 
-function buildSceneReconcilerSystemPrompt(language: "zh" | "en"): string {
+function buildSceneReconcilerSystemPrompt(language: "zh" | "ko" | "en"): string {
   if (language === "en") {
     return [
       "You reconcile an interactive-fiction scene with the world graph.",
@@ -294,6 +294,16 @@ function buildSceneReconcilerSystemPrompt(language: "zh" | "en"): string {
       "Do not rewrite prose. Do not invent facts that are not in the rendered scene. If nothing is missing, output an empty PlayMutation with empty arrays.",
       "Use the same eventId/turn/actionKind. For tangible things the player now physically holds, add a holding edge from actor_player with value.role=\"holding\"; if the target is evidence/clue/claim/proof_chain rather than an item, also set value.physical=true. Observed phenomena or learned facts are not holdings.",
       "Output strict JSON matching PlayMutation.",
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      "당신은 인터랙티브 픽션 장면을 월드 그래프와 정합시킵니다.",
+      "렌더링된 산문을 이미 적용된 변경 사항, 현재 상태 요약과 비교합니다.",
+      "산문에 구체적인 이름이 있는 새로운 물건, 단서, 증거, 장소, 조직, 인물이 나왔는데 적용된 변경 사항/현재 상태에 반영되지 않았다면, 그 누락된 그래프 사실만 보충하는 PlayMutation 항목만 출력합니다.",
+      "산문을 고치지 마세요. 산문에 없는 사실을 발명하지 마세요. 누락된 게 없으면 빈 PlayMutation을 출력하세요(배열은 비워 둠).",
+      "동일한 eventId/turn/actionKind를 사용합니다. 플레이어가 이제 물리적으로 손에 쥔 실물은 actor_player에서 해당 엔티티로 role=\"holding\"인 에지를 추가하세요; 대상이 evidence/clue/claim/proof_chain인 item이 아니면 value.physical=true도 설정합니다. 관찰된 현상이나 알게 된 정보는 보유물이 아닙니다.",
+      "엄격한 JSON을 출력하세요. PlayMutation 스키마를 준수해야 합니다.",
     ].join("\n");
   }
   return [
@@ -306,7 +316,7 @@ function buildSceneReconcilerSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language: "zh" | "en"): string {
+function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language: "zh" | "ko" | "en"): string {
   const actionKind = PlayActionIntentSchema.parse(input.action).actionKind;
   const eventId = `evt-${input.turn}`;
   if (language === "en") {
@@ -329,6 +339,29 @@ function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language
       input.stateBrief,
       "",
       "Rendered scene:",
+      input.sceneText,
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      `eventId: ${eventId}`,
+      `turn: ${input.turn}`,
+      `actionKind: ${actionKind}`,
+      "",
+      ...(input.worldPremise ? ["세계 설정:", input.worldPremise, ""] : []),
+      "플레이어 입력:",
+      input.input,
+      "",
+      "본 회차 이전의 현재 문맥:",
+      input.context,
+      "",
+      "적용된 변이:",
+      JSON.stringify(PlayMutationSchema.parse(input.mutation), null, 2),
+      "",
+      "현재 상태 요약:",
+      input.stateBrief,
+      "",
+      "최종 정상:",
       input.sceneText,
     ].join("\n");
   }
@@ -355,7 +388,7 @@ function buildSceneReconcilerUserPrompt(input: PlaySceneReconcileInput, language
   ].join("\n");
 }
 
-function buildActionInterpreterSystemPrompt(language: "zh" | "en"): string {
+function buildActionInterpreterSystemPrompt(language: "zh" | "ko" | "en"): string {
   if (language === "en") {
     return [
       "You are an interactive-fiction action interpreter.",
@@ -363,6 +396,15 @@ function buildActionInterpreterSystemPrompt(language: "zh" | "en"): string {
       "Do not add drama for the player, do not advance the plot, do not write scene prose.",
       "look = observe/examine/recall a clue; say = speak/probe/confront; move = move to a location; do = perform an action/use an item/investigate; wait = wait/stall/watch.",
       "Output strict JSON, no explanation.",
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      "당신은 인터랙티브 픽션 동작 해석기입니다.",
+      "당신의 임무는 플레이어의 자연어 한 줄을 다섯 가지 동작 종류 중 하나로 정규화하는 것입니다: look / say / move / do / wait.",
+      "플레이어에게 극을 더하지 마세요, 줄거리를 직접 밀지 마세요, 장면 산문을 쓰지 마세요.",
+      "look=관찰/조사/단서 회상; say=말하기/탐색/대질; move=장소로 이동; do=행동 수행/아이템 사용/조사; wait=대기/시간 끌기/지켜보기.",
+      "엄격한 JSON만 출력하세요, 설명하지 마세요.",
     ].join("\n");
   }
   return [
@@ -374,7 +416,7 @@ function buildActionInterpreterSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, language: "zh" | "en"): string {
+function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, language: "zh" | "ko" | "en"): string {
   if (language === "en") {
     return [
       "Current scene:",
@@ -384,6 +426,17 @@ function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, lan
       input.input,
       "",
       "Output fields: actionKind, targetEntityLabel?, targetLocationLabel?, intent, manner, risk, ambiguity, secondaryActions.",
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      "현재 장면:",
+      input.sceneBrief,
+      "",
+      "플레이어 입력:",
+      input.input,
+      "",
+      "출력 필드: actionKind, targetEntityLabel?, targetLocationLabel?, intent, manner, risk, ambiguity, secondaryActions.",
     ].join("\n");
   }
   return [
@@ -397,7 +450,7 @@ function buildActionInterpreterUserPrompt(input: PlayActionInterpreterInput, lan
   ].join("\n");
 }
 
-function buildWorldMutatorSystemPrompt(language: "zh" | "en"): string {
+function buildWorldMutatorSystemPrompt(language: "zh" | "ko" | "en"): string {
   if (language === "en") {
     return [
       "You are an interactive-fiction world-state drafter.",
@@ -423,6 +476,33 @@ function buildWorldMutatorSystemPrompt(language: "zh" | "en"): string {
       "Output strict JSON matching PlayMutation: eventId, turn, actionKind, summary, timeAdvance, entities, edges, stateSlots, evidence, blocked, blockedReason, notes.",
       "The following is only a JSON-shape example. Do not reuse its labels, names, or story facts in the actual world; the reserved player id actor_player is the only example id you must keep for the player entity:",
     `{"eventId":"evt-1","turn":1,"actionKind":"look","summary":"The player-character finds a sample clue and a sample key.","timeAdvance":{"elapsed":"a few breaths","anchor":"still in the same rain-soaked minute","rationale":"The player only examined the immediate scene.","synchronized":["The counterpart notices the pause but does not act openly yet."]},"entities":{"upsert":[{"id":"actor_player","type":"actor","label":"player-character","summary":"Reserved player entity id; replace label, summary, and status with the current world's player identity.","status":"alert","updatedEventId":"evt-1"},{"id":"actor_counterpart","type":"actor","label":"counterpart","summary":"Placeholder for a relevant person in the current world; replace with the real roster id/label.","status":"guarded","updatedEventId":"evt-1"},{"id":"evidence_sample_clue","type":"evidence","label":"sample clue","summary":"A tangible clue discovered this turn; replace with a real object from the scene.","status":"seen","updatedEventId":"evt-1"},{"id":"item_sample_key","type":"item","label":"sample key","summary":"A tangible item collected this turn; replace with a real object from the scene.","status":"collected","updatedEventId":"evt-1"}]},"edges":{"upsert":[{"fromId":"actor_player","type":"suspicious_of","toId":"actor_counterpart","value":{"role":"relation"}},{"fromId":"actor_player","type":"holds","toId":"item_sample_key","value":{"role":"holding"}},{"fromId":"actor_player","type":"holds","toId":"evidence_sample_clue","value":{"role":"holding","physical":true}}]},"stateSlots":{"upsert":[{"id":"slot_sample_timer","kind":"timer","label":"sample timer","value":3,"updatedEventId":"evt-1"}]}}`,
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      "당신은 인터랙티브 픽션 세계 상태 초안 작성자입니다.",
+      "플레이어의 행동과 현재 문맥만을 바탕으로, 이번 턴에 발생할 수 있는 상태 변화를 초안으로 제안하세요.",
+      "최종 산문을 쓰지 마세요; 리듀서 몫인 저장소를 대신 쓰지 마세요; 주요 상태가 근거 없이 한 번에 완성되게 하지 마세요.",
+      "플레이어 입력 하나당 인접한 한 비트만 전진시킵니다. 플레이어가 여러 동작을 한 문장에 적었다면, 직접 언급된 동작 사슬만, 가장 가까운 새로운 압력 지점까지만 처리하세요; 화면 밖 여파, 완전한 보상, 입력이 직접 시도한 범위를 넘어선 해결까지 건너뛰지 마세요.",
+      "과정을 건너뛰지 마세요. 플레이어가 달려가거나, 손을 뻗거나, 사용하거나, 열거나, 대면할 때, 그 이동·저항·방해·즉각적 압력을 같은 비트 안에 계산해야지, 곧바로 사후 상태로 뛰어넘으면 안 됩니다.",
+      "이 엔진은 장르 중립적입니다: 로맨스, 모험, 무협, 미스터리, 일상 모두 같은 구조를 씁니다. 엔티티 타입: actor/location/item/evidence/clue/claim/proof_chain/organization/rule/scene/event — 필요에 따라 골라 쓰세요.",
+      "새롭거나 중요한 모든 엔티티에 한 줄 요약(누구/무엇인지, 왜 중요한지)을 붙이세요 — 상태 단어 하나로만 하지 마세요. 플레이어가 사이드 패널에서 이 요약을 펼쳐 봅니다.",
+      "플레이어가 발견하거나 손에 넣은 \"실물\"(단서, 문서, 흉기, 징표, 핵심 증거 등)은 반드시 독립된 엔티티(item/evidence/clue)로 만들어야 합니다. 어떤 인물의 status에 욱여넣지 마세요 — 그래야만 플레이어의 \"소지품\"에 들어가 추적될 수 있습니다. 관찰된 현상, 지식, 인상, 환경 징후는 소지품이 아닙니다.",
+      "entity.status로 모든 장르의 상태 진전을 기록하세요. 상태 단어는 이 세계의 장르에 맞춰 정하고, 한 단계씩 나아가며 건너뛰지 마세요(예: 관계: 낯섦→호기심→마음 끌림→연인; 부상: 건강→출혈→위독; 단서: 발견→수집→확정).",
+      "플레이어 본인 엔티티 id는 고정입니다: 반드시 actor_player를 쓰세요. 절대 이 id를 본편 이름이나 다른 id로 바꾸지 마세요; label, summary, status만 이 세계의 플레이어 정체로 교체하세요.",
+      "엔티티 사이에 의미 있는 관계가 생기거나 바뀔 때(동맹/적대/친족/의심/빚/사제 등), edges.upsert에 {\"fromId\":\"<엔티티>\",\"type\":\"<관계>\",\"toId\":\"<엔티티>\",\"value\":{\"role\":\"relation\"}} 꼴로 기록하세요 — 이건 사이드바 \"관계망\"의 유일한 소스이니, 빠뜨리는 것보단 과하게 기록하는 편이 낫습니다; 관계가 바뀌면(예: 의심→적대) 새 에지를 한 줄 더 넣으세요.",
+      "플레이어가 실질적으로 쥐고/들고/품에 넣고/가져가는 실물일 때, actor_player에서 그 엔티티로 향하는 에지를 기록하고 value.role=\"holding\"로 설정하세요. 쥐고 있는 대상이 evidence/clue/claim/proof_chain이고 item이 아니면 value.physical=true도 함께 설정하세요. 플레이어가 그저 보거나 알게 된 정도라면 value.role=\"observed\"나 일반 관계로 두고, 절대 holding으로 쓰지 마세요.",
+      "현재 문맥에 엔티티 명부가 들어 있을 수 있습니다. entities, edges, evidence, stateSlots 모두 명부의 정확한 id를 우선 재사용하세요. 이름만 알면 명부의 정확한 label을 쓰고, 절대 같은 사람/물건에 새 id를 발급하지 마세요(아니면 사이드바에 중복 노드가 생깁니다).",
+      "상태 추적은 선택 사항이며, 사용자의 세계 계약에 따릅니다. 세계 계약이 수치·패널·레벨·RPG화·수량화 진도를 금지하면 stateSlots을 출력하지 마세요; 대신 entity.status / summary / evidence transitions로 자연언어 상태를 표현하세요.",
+      "stateSlots이 진짜 필요할 때도, 사용자가 명시적으로 양적 추적을 요청했거나 픽션에 구체적인 카운트다운/시각/개수가 있는 경우가 아니면 자연언어 value를 우선하세요. 스키마가 지원한다고 숫자를 억지로 만들지 마세요.",
+      "초반(처음 몇 턴)에는 전제가 이미 확정한 상태만 씨앗으로 심으세요: 명확한 기한이 있고 세계가 양화를 허용하면 timer 슬롯이 될 수 있음; 핵심 수수께끼/목표물 → 첫 clue/evidence 엔티티; 이미 이름이 나온 핵심 인물 → actor 엔티티에 한 줄 summary. 개장 세계를 거의 비워 두지 마세요.",
+      "절제: 이야기가 진짜로 실재시키는 엔티티와 수치만 만드세요. 패널을 채우려고 괜한 스탯이나 아이템을 꾸며내지 마세요.",
+      "이 세계가 진짜 수사/추리 장르일 때만 evidence.transitions로 증거 생애주기를 돌리세요; 다른 장르면 비워 두세요.",
+      "플레이어 행동이 유효하지 않거나 정보가 부족하면 blocked=true 하고 blockedReason을 적으세요.",
+      "시간은 세계 동기화 축이지 고정 틱이 아닙니다. 비개장 턴마다 timeAdvance를 쓰세요: elapsed=이 행동이 의미상 얼마나 걸렸나; anchor=행동 끝난 뒤 세계가 어떤 시간/단계에 있는가(이 세계에 시계·낮밤·계절·폐관 기간·마감일·조수·순찰 주기 등 시간 앵커가 있으면); rationale=왜 이 길이가 맞나; synchronized=같은 경과 시간 동안 관련 인물/장소/압력이 어떻게 동시에 변했나. 눈짓은 몇 초, 이동은 반나절, 수련은 삼 년 — 사용자의 세계 계약을 따르고, 절대 보편 턴 길이를 발명하지 마세요.",
+      "출력은 엄격한 JSON, PlayMutation 스키마 준수: eventId, turn, actionKind, summary, timeAdvance, entities, edges, stateSlots, evidence, blocked, blockedReason, notes.",
+      "아래 예시는 구조만 보여줍니다. 예시 안의 라벨·이름·스토리 사실은 실제 세계에서 재사용하지 마세요; 예약된 플레이어 id actor_player만 플레이어 엔티티용으로 반드시 유지하세요:",
+    `{"eventId":"evt-1","turn":1,"actionKind":"look","summary":"플레이어 캐릭터가 샘플 단서와 샘플 열쇠를 발견했습니다.","timeAdvance":{"elapsed":"몇 숨","anchor":"여전히 같은 비 오는 밤 순간 안에","rationale":"플레이어는 눈앞 물건만 들여다봤을 뿐 현장을 떠나지 않았습니다.","synchronized":["상대방이 멈칫함을 알아챘지만 아직 공개적으로 행동하지는 않습니다."]},"entities":{"upsert":[{"id":"actor_player","type":"actor","label":"플레이어 캐릭터","summary":"플레이어 본인 고정 엔티티 id; 실제 출력에선 label, summary, status만 본편 플레이어 정체로 교체.","status":"경계","updatedEventId":"evt-1"},{"id":"actor_counterpart","type":"actor","label":"관련 인물","summary":"현재 세계에 관련된 인물의 자리표시자 예시; 실제 출력은 본편 진짜 엔티티로 교체해야 함.","status":"경계","updatedEventId":"evt-1"},{"id":"evidence_sample_clue","type":"evidence","label":"샘플 단서","summary":"이 턴에 발견된 실물 단서 예시; 실제 출력은 장면의 진짜 물건으로 교체.","status":"발견됨","updatedEventId":"evt-1"},{"id":"item_sample_key","type":"item","label":"샘플 열쇠","summary":"이 턴에 얻은 실물 도구 예시; 실제 출력은 장면의 진짜 물건으로 교체.","status":"수집됨","updatedEventId":"evt-1"}]},"edges":{"upsert":[{"fromId":"actor_player","type":"의심","toId":"actor_counterpart","value":{"role":"relation"}},{"fromId":"actor_player","type":"소유","toId":"item_sample_key","value":{"role":"holding"}},{"fromId":"actor_player","type":"소유","toId":"evidence_sample_clue","value":{"role":"holding","physical":true}}]},"stateSlots":{"upsert":[{"id":"slot_sample_timer","kind":"timer","label":"샘플 타이머","value":3,"updatedEventId":"evt-1"}]}}`,
     ].join("\n");
   }
   return [
@@ -452,7 +532,7 @@ function buildWorldMutatorSystemPrompt(language: "zh" | "en"): string {
   ].join("\n");
 }
 
-function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh" | "en"): string {
+function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh" | "ko" | "en"): string {
   if (language === "en") {
     return [
       `turn: ${input.turn}`,
@@ -466,6 +546,21 @@ function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh
       input.context,
       "",
       "Requirement: use eventId evt-" + input.turn + "; every new or referenced entity id must be stable, readable, and short.",
+    ].join("\n");
+  }
+  if (language === "ko") {
+    return [
+      `turn: ${input.turn}`,
+      "플레이어 원문:",
+      input.input,
+      "",
+      "동작 해석:",
+      JSON.stringify(PlayActionIntentSchema.parse(input.action), null, 2),
+      "",
+      "현재 문맥:",
+      input.context,
+      "",
+      "요구사항: eventId는 evt-" + input.turn + " 사용; 모든 신규 또는 참조 엔티티 id는 안정적이고, 읽기 쉽고, 짧아야 함.",
     ].join("\n");
   }
   return [
@@ -483,7 +578,7 @@ function buildWorldMutatorUserPrompt(input: PlayWorldMutatorInput, language: "zh
   ].join("\n");
 }
 
-export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open", language: "zh" | "en" = "zh"): string {
+export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open", language: "zh" | "ko" | "en" = "zh"): string {
   if (language === "en") {
     const base = [
       "You are an interactive-fiction scene-response author.",
@@ -534,7 +629,7 @@ export function buildSceneRendererSystemPrompt(mode: "open" | "guided" = "open",
   return [...base, actionsRule, "输出严格 JSON：sceneText, suggestedActions。"].join("\n");
 }
 
-function buildSceneRendererUserPrompt(input: PlaySceneRenderInput, language: "zh" | "en"): string {
+function buildSceneRendererUserPrompt(input: PlaySceneRenderInput, language: "zh" | "ko" | "en"): string {
   const premise = input.worldPremise?.trim();
   if (language === "en") {
     return [

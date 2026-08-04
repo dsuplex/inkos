@@ -185,13 +185,14 @@ const FillNodeParams = Type.Object({
   instruction: Type.String({ description: "what this scene should contain (beats, who speaks, choices)" }),
 });
 
-export type FilmAuthoringLanguage = "zh" | "en";
+export type FilmAuthoringLanguage = "zh" | "ko" | "en";
 
 const NODE_SYSTEM_ZH = `你是互动影游编剧。根据当前图上下文和指令，为指定节点生成 JSON（单个 StoryNode：type/title/sceneDesc/dialogue[]/choices[]），只输出 JSON。choices[].targetNodeId 必须指向已存在的节点 id。`;
 const NODE_SYSTEM_EN = `You are an interactive film scriptwriter. Using the current graph context and the instruction, generate JSON for the specified node (a single StoryNode: type/title/sceneDesc/dialogue[]/choices[]). Output JSON only. Every choices[].targetNodeId must point to an existing node id.`;
+const NODE_SYSTEM_KO = `당신은 인터랙티브 필름 각본가입니다. 현재 그래프 컨텍스트와 지시를 바탕으로 지정된 노드에 대한 JSON을 생성하세요 (단일 StoryNode: type/title/sceneDesc/dialogue[]/choices[]). JSON만 출력하세요. 모든 choices[].targetNodeId는 반드시 기존 노드 id를 가리켜야 합니다.`;
 
 function nodeSystemPrompt(language: FilmAuthoringLanguage): string {
-  return language === "en" ? NODE_SYSTEM_EN : NODE_SYSTEM_ZH;
+  return language === "en" ? NODE_SYSTEM_EN : language === "ko" ? NODE_SYSTEM_KO : NODE_SYSTEM_ZH;
 }
 
 function graphUpdatedDetails(rev: number, promptId: string, extra: Record<string, unknown> = {}) {
@@ -223,7 +224,9 @@ export function createFillNodeTool(
       });
       const userPrompt = language === "en"
         ? `${context}\n\nNode id to fill: ${params.nodeId}\nInstruction: ${params.instruction}`
-        : `${context}\n\n要填的节点 id：${params.nodeId}\n指令：${params.instruction}`;
+        : language === "ko"
+          ? `${context}\n\n채울 노드 id: ${params.nodeId}\n지시: ${params.instruction}`
+          : `${context}\n\n要填的节点 id：${params.nodeId}\n指令：${params.instruction}`;
       const text = await deps.chat(systemPrompt, userPrompt);
       const { rev } = await applyGraphDelta({ projectRoot, projectId, delta: buildFillNodeDeltaFromLLMText(text, params.nodeId), phase: "workshop" });
       return textResult(`Node ${params.nodeId} filled (rev ${rev}).`, graphUpdatedDetails(rev, "interactive-film.script"));
@@ -252,7 +255,9 @@ export function createReviseNodeTool(
       });
       const userPrompt = language === "en"
         ? `${context}\n\nNode id to revise: ${params.nodeId}\nCurrent content: ${JSON.stringify(current ?? {})}\nRevision instruction: ${params.instruction}`
-        : `${context}\n\n要修改的节点 id：${params.nodeId}\n现有内容：${JSON.stringify(current ?? {})}\n修改指令：${params.instruction}`;
+        : language === "ko"
+          ? `${context}\n\n수정할 노드 id: ${params.nodeId}\n현재 내용: ${JSON.stringify(current ?? {})}\n수정 지시: ${params.instruction}`
+          : `${context}\n\n要修改的节点 id：${params.nodeId}\n现有内容：${JSON.stringify(current ?? {})}\n修改指令：${params.instruction}`;
       const text = await deps.chat(systemPrompt, userPrompt);
       const { rev } = await applyGraphDelta({ projectRoot, projectId, delta: buildFillNodeDeltaFromLLMText(text, params.nodeId), phase: "workshop" });
       return textResult(`Node ${params.nodeId} revised (rev ${rev}).`, graphUpdatedDetails(rev, "interactive-film.script"));
@@ -274,6 +279,7 @@ const DraftStructureParams = Type.Object({
 
 const STRUCT_SYSTEM_ZH = `你是互动影游编剧。根据上下文与指令，生成分支骨架 JSON：{ "nodes": [StoryNode...] }。恰好 1 个 type=start，至少 2 个 branch，至少 2 个差异化 ending 节点；每条路径都能到某个 ending；只输出 JSON。`;
 const STRUCT_SYSTEM_EN = `You are an interactive film scriptwriter. Using the context and the instruction, generate the branching skeleton as JSON: { "nodes": [StoryNode...] }. Exactly 1 node with type=start; at least 2 branch nodes; at least 2 clearly differentiated ending nodes; every path must reach some ending. Output JSON only.`;
+const STRUCT_SYSTEM_KO = `당신은 인터랙티브 필름 각본가입니다. 컨텍스트와 지시를 바탕으로 분기 골격을 JSON으로 생성하세요: { "nodes": [StoryNode...] }. type=start 노드가 정확히 1개; branch 노드가 최소 2개; 서로 뚜렷이 구분되는 ending 노드가 최소 2개; 모든 경로가 어떤 ending에 도달해야 합니다. JSON만 출력하세요.`;
 
 export function createDraftStructureTool(
   projectRoot: string,
@@ -289,13 +295,15 @@ export function createDraftStructureTool(
     async execute(_id, params: Static<typeof DraftStructureParams>) {
       const graph = await loadStoryGraph(projectRoot, projectId);
       const context = graph ? buildFilmAuthoringContext(graph) : "(empty graph)";
-      const systemPrompt = await appendPromptPackGuidance(language === "en" ? STRUCT_SYSTEM_EN : STRUCT_SYSTEM_ZH, {
+      const systemPrompt = await appendPromptPackGuidance(language === "en" ? STRUCT_SYSTEM_EN : language === "ko" ? STRUCT_SYSTEM_KO : STRUCT_SYSTEM_ZH, {
         promptId: "interactive-film.story-graph",
         projectRoot,
       });
       const userPrompt = language === "en"
         ? `${context}\n\nSkeleton instruction: ${params.instruction}`
-        : `${context}\n\n骨架指令：${params.instruction}`;
+        : language === "ko"
+          ? `${context}\n\n스켈레톤 지시: ${params.instruction}`
+          : `${context}\n\n骨架指令：${params.instruction}`;
       const text = await deps.chat(systemPrompt, userPrompt);
       const { graph: next, rev } = await applyGraphDelta({ projectRoot, projectId, delta: buildStructureDeltaFromLLMText(text), phase: "structure" });
       return textResult(`Structure drafted: ${next.nodes.length} nodes (rev ${rev}).`, graphUpdatedDetails(rev, "interactive-film.story-graph"));

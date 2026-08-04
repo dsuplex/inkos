@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -5322,7 +5322,7 @@ describe("PipelineRunner", () => {
           bookDir: string;
           chapterContent: string;
           chapterNumber: number;
-          language: "zh" | "en";
+          language: "zh" | "ko" | "en";
         }) => Promise<{
           auditResult: AuditResult;
           aiTellCount: number;
@@ -5379,7 +5379,7 @@ describe("PipelineRunner", () => {
           bookDir: string;
           chapterContent: string;
           chapterNumber: number;
-          language: "zh" | "en";
+          language: "zh" | "ko" | "en";
         }) => Promise<{
           auditResult: AuditResult;
           aiTellCount: number;

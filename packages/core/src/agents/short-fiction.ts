@@ -352,7 +352,7 @@ export function renderShortFictionDraftMarkdown(
   draft: ShortFictionBatchDraft,
   language: ShortFictionLanguage = "zh",
 ): string {
-  const hookHeading = language === "en" ? "## Opening Hook" : "## 开篇钩子";
+  const hookHeading = language === "en" ? "## Opening Hook" : language === "ko" ? "## 오프닝 훅" : "## 开篇钩子";
   return [
     `# ${draft.storyTitle}`,
     draft.openingHook ? `${hookHeading}\n\n${draft.openingHook}` : "",
@@ -470,7 +470,9 @@ function normalizeTitle(raw: string): string {
 function normalizeChapterTitle(raw: string, number: number, language: ShortFictionLanguage = "zh"): string {
   const prefixPattern = language === "en"
     ? new RegExp(`^Chapter\\s*${number}\\s*[:：.\\-–—]?\\s*`, "i")
-    : new RegExp(`^第\\s*${number}\\s*章\\s*`);
+    : language === "ko"
+      ? new RegExp(`^제\\s*${number}\\s*장\\s*`)
+      : new RegExp(`^第\\s*${number}\\s*章\\s*`);
   const title = normalizeTitle(raw).replace(prefixPattern, "").trim();
   return title || fallbackChapterTitle(number, language);
 }
@@ -486,16 +488,20 @@ export function formatShortFictionChapterHeading(
     if (new RegExp(`^Chapter\\s*${number}\\b`, "i").test(trimmed)) return trimmed;
     return `Chapter ${number}: ${trimmed}`;
   }
+  if (language === "ko") {
+    if (new RegExp(`^제\\s*${number}\\s*장`).test(trimmed)) return trimmed;
+    return `제${number}장 ${trimmed}`;
+  }
   if (new RegExp(`^第\\s*${number}\\s*章`).test(trimmed)) return trimmed;
   return `第${number}章 ${trimmed}`;
 }
 
 function untitledShortTitle(language: ShortFictionLanguage): string {
-  return language === "en" ? "Untitled Short Story" : "未命名短篇";
+  return language === "en" ? "Untitled Short Story" : language === "ko" ? "제목 없는 단편" : "未命名短篇";
 }
 
 function fallbackChapterTitle(number: number, language: ShortFictionLanguage): string {
-  return language === "en" ? `Chapter ${number}` : `第${number}章`;
+  return language === "en" ? `Chapter ${number}` : language === "ko" ? `제${number}장` : `第${number}章`;
 }
 
 // charsPerChapter is the language's native unit (zh chars / en words). The 2.2

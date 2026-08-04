@@ -114,12 +114,21 @@ export function buildStateValidationFeedback(
   if (warnings.length === 0) {
     return language === "en"
       ? "The previous settlement contradicted the chapter text. Reconcile truth files strictly to the body."
-      : "上一次状态结算与正文矛盾。请严格以正文为准修正 truth files。";
+      : language === "ko"
+        ? "이전 상태 정산이 챕터 본문과 모순됩니다. truth files를 본문을 기준으로 엄격히 바로잡으십시오."
+        : "上一次状态结算与正文矛盾。请严格以正文为准修正 truth files。";
   }
 
   if (language === "en") {
     return [
       "The previous settlement failed validation. Fix these contradictions against the chapter body:",
+      ...warnings.map((warning) => `- [${warning.category}] ${warning.description}`),
+    ].join("\n");
+  }
+
+  if (language === "ko") {
+    return [
+      "이전 상태 정산이 검증에 실패했습니다. 챕터 본문을 기준으로 다음 모순들을 바로잡으십시오:",
       ...warnings.map((warning) => `- [${warning.category}] ${warning.description}`),
     ].join("\n");
   }
@@ -141,7 +150,9 @@ export function buildStateDegradedIssues(
       description: warning.description,
       suggestion: language === "en"
         ? "Repair chapter state from the persisted body before continuing."
-        : "请先基于已保存正文修复本章 state，再继续后续章节。",
+        : language === "ko"
+          ? "계속하기 전에 저장된 본문을 기준으로 이 챕터의 state를 복구하십시오."
+          : "请先基于已保存正文修复本章 state，再继续后续章节。",
     }));
   }
 
@@ -150,10 +161,14 @@ export function buildStateDegradedIssues(
     category: "state-validation",
     description: language === "en"
       ? "State validation still failed after settlement retry."
-      : "状态结算重试后仍未通过校验。",
+      : language === "ko"
+        ? "정산 재시도 후에도 상태 검증이 여전히 실패했습니다."
+        : "状态结算重试后仍未通过校验。",
     suggestion: language === "en"
       ? "Repair chapter state from the persisted body before continuing."
-      : "请先基于已保存正文修复本章 state，再继续后续章节。",
+      : language === "ko"
+        ? "계속하기 전에 저장된 본문을 기준으로 이 챕터의 state를 복구하십시오."
+        : "请先基于已保存正文修复本章 state，再继续后续章节。",
   }];
 }
 

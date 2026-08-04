@@ -1,4 +1,4 @@
-import { BaseAgent } from "./base.js";
+﻿import { BaseAgent } from "./base.js";
 import type { BookConfig } from "../models/book.js";
 import type { GenreProfile } from "../models/genre-profile.js";
 import type { ContextPackage, RuleStack } from "../models/input-governance.js";
@@ -215,7 +215,7 @@ export class ChapterAnalyzerAgent extends BaseAgent {
     genreProfile: GenreProfile,
     genreBody: string,
     bookRulesBody: string,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): string {
     if (language === "en") {
       const numericalBlock = genreProfile.numericalSystem
@@ -324,6 +324,114 @@ Updated character matrix (one ## section per character, bullet-list fields):
 2. Every factual change in the chapter must appear in the corresponding tracking file.
 3. Do not miss resource changes, movement, relationship changes, or information changes.
 4. Information boundaries in the character matrix must stay exact: each character only knows what they directly witnessed or learned.`;
+    }
+    if (language === "ko") {
+      const numericalBlock = genreProfile.numericalSystem
+        ? "\n- 본 장르에는 수치/자원 시스템이 있습니다. UPDATED_LEDGER에 본문에 나온 모든 자원 변동을 반드시 기록하세요."
+        : "\n- 본 장르에는 수치 시스템이 없습니다. UPDATED_LEDGER는 비워 두세요.";
+
+      return `【언어 재정의】모든 출력은 반드시 한국어로 작성하세요. === TAG === 표식은 그대로 유지.
+
+당신은 소설 연속성 분석가입니다. 완료된 장을 분석해 모든 상태 변화를 추출하고 추적 파일을 업데이트합니다.
+
+## 작업 모드
+
+새 글을 쓰는 게 아닙니다. 이미 완성된 장 본문을 읽고 책의 진실 파일을 갱신합니다.
+1. 장을 꼼꼼히 읽고 모든 중요 사실을 추출하세요.
+2. 기존 추적 파일을 기반으로 증분 업데이트하세요(백지에서 다시 쓰지 마세요).
+3. 출력 계약은 작가 파이프라인과 동일하게 유지하세요.
+
+## 추출 대상
+
+- 캐릭터 출현/퇴장, 부상/돌파/사망 등 상태 변화
+- 위치 이동, 장면 전환
+- 아이템/자원의 획득과 손실
+- 훅 매설, 추진, 회수
+- 감정 아크 변화
+- 지선 진행
+- 관계 변화, 정보 경계 변화
+
+## 도서 정보
+
+- 제목: ${book.title}
+- 장르: ${genreProfile.name} (${book.genre})
+- 플랫폼: ${book.platform}
+${numericalBlock}
+
+## 장르 가이드
+
+${genreBody}
+
+${bookRulesBody ? `## 도서 규칙\n\n${bookRulesBody}` : ""}
+
+## 출력 형식
+
+=== TAG === 구분자를 아래와 정확히 맞춰 사용하세요:
+
+=== CHAPTER_TITLE ===
+(장 제목을 추출하거나 추론. 제목 텍스트만 출력)
+
+=== CHAPTER_CONTENT ===
+(원본 장 내용을 그대로 반복. 재작성 금지.)
+
+=== PRE_WRITE_CHECK ===
+(분석 모드에서는 비움)
+
+=== POST_SETTLEMENT ===
+(분석 모드에서는 비움)
+
+=== UPDATED_STATE ===
+장 끝 시점의 최신 상태를 반영한 Markdown 표로 갱신된 상태 카드:
+| 필드 | 값 |
+| --- | --- |
+| 현재 장 | {장_번호} |
+| 현재 위치 | ... |
+| 주인공 상태 | ... |
+| 현재 목표 | ... |
+| 현재 제약 | ... |
+| 현재 관계 | ... |
+| 현재 갈등 | ... |
+
+=== UPDATED_LEDGER ===
+(장르에 수치 시스템이 있으면: 완전 갱신된 자원 장부 표. 없으면 비움)
+
+=== UPDATED_HOOKS ===
+모든 알려진 훅의 최신 상태를 담은 Markdown 표로 갱신된 훅 풀:
+| 훅_id | 시작 장 | 유형 | 상태 | 최근 추진 장 | 예상 회수 | 회수 리듬 | 비고 |
+
+=== CHAPTER_SUMMARY ===
+단일 Markdown 표 행:
+| 장 | 제목 | 출현 인물 | 핵심 사건 | 상태 변화 | 훅 동태 | 감정 기조 | 장 유형 |
+
+=== UPDATED_SUBPLOTS ===
+갱신된 지선 보드 (Markdown 표)
+
+=== UPDATED_EMOTIONAL_ARCS ===
+갱신된 감정 아크 (Markdown 표)
+
+=== UPDATED_CHARACTER_MATRIX ===
+갱신된 캐릭터 매트릭스 (캐릭터당 ## 섹션 1개, bullet list 필드):
+
+## 캐릭터명
+- **역할**: 주인공 / 적대자 / 협력자 / 조연 / 언급
+- **태그**: 핵심 정체성 태그
+- **반차**: 기대를 벗어나는 독특한 디테일
+- **말투**: 화법 요약
+- **성격**: 성격 핵심
+- **동기**: 근본 동력
+- **현재**: 이번 장 즉각적 목표
+- **관계**: 다른캐릭터(관계종류/장#) | ...
+- **알고 있는 것**: 이 캐릭터가 아는 것(직접 목격하거나 전해 들은 것만)
+- **모르는 것**: 이 캐릭터가 모르는 것
+
+(모든 캐릭터 반복. 새 캐릭터는 새 ## 블록으로 추가, 기존 캐릭터는 증분 갱신.)
+
+## 규칙
+
+1. UPDATED_STATE와 UPDATED_HOOKS는 "현재 추적 파일" 기준 증분 업데이트여야 함.
+2. 장의 모든 사실적 변화는 해당 추적 파일에 반드시 반영되어야 함.
+3. 자원 변화, 이동, 관계 변화, 정보 변화 어느 것도 빠뜨리지 말 것.
+4. 캐릭터 매트릭스의 "알고 있는 것/모르는 것"은 정확해야 함: 각 캐릭터는 직접 목격하거나 전해 들은 것만 압니다.`;
     }
 
     const numericalBlock = genreProfile.numericalSystem
@@ -434,7 +542,7 @@ ${bookRulesBody ? `## 本书规则\n\n${bookRulesBody}` : ""}
   }
 
   private buildUserPrompt(params: {
-    readonly language: "zh" | "en";
+    readonly language: "zh" | "ko" | "en";
     readonly chapterNumber: number;
     readonly chapterContent: string;
     readonly chapterTitle?: string;
@@ -476,6 +584,28 @@ ${params.hooksBlock}${params.volumeSummariesBlock}${params.subplotBlock}${params
 
 Please return the result strictly in the === TAG === format.`;
     }
+    if (params.language === "ko") {
+      const titleLine = params.chapterTitle
+        ? `장 제목: ${params.chapterTitle}\n`
+        : "";
+
+      const ledgerBlock = params.ledger
+        ? `\n## 현재 자원 장부\n${params.ledger}\n`
+        : "";
+
+      return `${params.chapterNumber}장 본문을 분석해 모든 추적 파일을 업데이트하세요.
+${titleLine}
+## 장 본문
+
+${params.chapterContent}
+
+## 현재 상태카드
+${params.currentState}
+${ledgerBlock}
+${params.hooksBlock}${params.volumeSummariesBlock}${params.subplotBlock}${params.emotionalBlock}${params.matrixBlock}${params.summariesBlock}${params.outlineOrControlBlock}${params.bibleBlock}
+
+=== TAG === 형식으로 엄격히 결과를 반환하세요.`;
+    }
 
     const titleLine = params.chapterTitle
       ? `章节标题：${params.chapterTitle}\n`
@@ -503,7 +633,7 @@ ${params.hooksBlock}${params.volumeSummariesBlock}${params.subplotBlock}${params
     chapterIntent: string,
     contextPackage: ContextPackage,
     ruleStack: RuleStack,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): string {
     const selectedContext = contextPackage.selectedContext
       .map((entry) => `- ${entry.source}: ${entry.reason}${entry.excerpt ? ` | ${entry.excerpt}` : ""}`)
@@ -579,21 +709,29 @@ ${overrides}\n`;
       mood: string;
       chapterType: string;
     }>,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): string {
     if (summaries.length === 0) {
       return this.missingFilePlaceholder(language);
     }
 
-    const header = language === "en"
-      ? [
-          "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |",
-          "| --- | --- | --- | --- | --- | --- | --- | --- |",
-        ]
-      : [
-          "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
-          "| --- | --- | --- | --- | --- | --- | --- | --- |",
-        ];
+    let header: string[];
+    if (language === "en") {
+      header = [
+        "| Chapter | Title | Characters | Key Events | State Changes | Hook Activity | Mood | Chapter Type |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+      ];
+    } else if (language === "ko") {
+      header = [
+        "| 장 | 제목 | 출현 인물 | 핵심 사건 | 상태 변화 | 훅 동태 | 감정 기조 | 장 유형 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+      ];
+    } else {
+      header = [
+        "| 章节 | 标题 | 出场人物 | 关键事件 | 状态变化 | 伏笔动态 | 情绪基调 | 章节类型 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+      ];
+    }
 
     const rows = summaries.map((summary) => [
       summary.chapter,
@@ -616,7 +754,7 @@ ${overrides}\n`;
     return value.replace(/\|/g, "\\|").replace(/\n/g, "<br>");
   }
 
-  private async readFileOrDefault(path: string, language: "zh" | "en"): Promise<string> {
+  private async readFileOrDefault(path: string, language: "zh" | "ko" | "en"): Promise<string> {
     try {
       return await readFile(path, "utf-8");
     } catch {
@@ -624,11 +762,15 @@ ${overrides}\n`;
     }
   }
 
-  private missingFilePlaceholder(language: "zh" | "en"): string {
-    return language === "en" ? "(file not created yet)" : "(文件尚未创建)";
+  private missingFilePlaceholder(language: "zh" | "ko" | "en"): string {
+    if (language === "en") return "(file not created yet)";
+    if (language === "ko") return "(파일 미생성)";
+    return "(文件尚未创建)";
   }
 
-  private defaultChapterTitle(chapterNumber: number, language: "zh" | "en"): string {
-    return language === "en" ? `Chapter ${chapterNumber}` : `第${chapterNumber}章`;
+  private defaultChapterTitle(chapterNumber: number, language: "zh" | "ko" | "en"): string {
+    if (language === "en") return `Chapter ${chapterNumber}`;
+    if (language === "ko") return `제${chapterNumber}장`;
+    return `第${chapterNumber}章`;
   }
 }

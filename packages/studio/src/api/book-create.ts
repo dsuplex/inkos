@@ -1,4 +1,4 @@
-import { normalizePlatformOrOther, defaultChapterLength, type Platform } from "@actalk/inkos-core";
+﻿import { normalizePlatformOrOther, defaultChapterLength, type Platform } from "@actalk/inkos-core";
 export { waitForStudioBookReady } from "../lib/book-ready.js";
 export type { StudioBookDetail, WaitForStudioBookReadyOptions } from "../lib/book-ready.js";
 
@@ -20,7 +20,7 @@ export interface StudioBookConfigDraft {
   readonly status: "outlining";
   readonly targetChapters: number;
   readonly chapterWordCount: number;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -46,7 +46,9 @@ export function buildStudioBookConfig(body: StudioCreateBookBody, now: string): 
       ? { language: "en" as const }
       : body.language === "zh"
         ? { language: "zh" as const }
-        : {}),
+        : body.language === "ko"
+          ? { language: "ko" as const }
+          : {}),
     createdAt: now,
     updatedAt: now,
   };

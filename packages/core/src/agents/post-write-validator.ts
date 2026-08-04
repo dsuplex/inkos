@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Post-write rule-based validator.
  *
  * Deterministic, zero-LLM-cost checks that run after every chapter generation.
@@ -18,7 +18,7 @@ export interface PostWriteViolation {
 
 export function normalizePostWriteSurface(
   content: string,
-  languageOverride?: "zh" | "en",
+  languageOverride?: "zh" | "ko" | "en",
 ): string {
   let normalized = stripPostWriteMetaLines(content);
   if (languageOverride !== "en") {
@@ -82,7 +82,7 @@ export function validatePostWrite(
   content: string,
   genreProfile: GenreProfile,
   bookRules: BookRules | null,
-  languageOverride?: "zh" | "en",
+  languageOverride?: "zh" | "ko" | "en",
 ): ReadonlyArray<PostWriteViolation> {
   const violations: PostWriteViolation[] = [];
 
@@ -190,15 +190,20 @@ export function validatePostWrite(
   const chapterRefs = content.match(chapterRefPattern);
   if (chapterRefs && chapterRefs.length > 0) {
     const unique = [...new Set(chapterRefs)];
+    const lang = languageOverride ?? genreProfile.language;
     violations.push({
-      rule: isEnglish ? "chapter-number-reference" : "章节号指称",
+      rule: lang === "en" ? "chapter-number-reference" : "章节号指称",
       severity: "error",
-      description: isEnglish
+      description: lang === "en"
         ? `Chapter text contains explicit chapter number references: ${unique.map(r => `"${r}"`).join(", ")}. Characters do not know they are in a numbered chapter.`
-        : `正文中出现了章节号指称：${unique.map(r => `"${r}"`).join("、")}。角色不知道自己在第几章。`,
-      suggestion: isEnglish
+        : lang === "ko"
+          ? `본문에 챕터 번호 지칭이 등장함: ${unique.map(r => `"${r}"`).join(", ")}. 캐릭터는 자신이 몇 장에 있는지 모릅니다.`
+          : `正文中出现了章节号指称：${unique.map(r => `"${r}"`).join("、")}。角色不知道自己在第几章。`,
+      suggestion: lang === "en"
         ? "Replace with natural references: 'that night', 'when the warehouse burned', 'the incident at the dock'"
-        : '改成自然表达："那天晚上"、"仓库出事那次"、"码头上的事"',
+        : lang === "ko"
+          ? '자연스러운 표현으로 바꾸세요: "그날 밤", "창고가 불탄 그때", "부두에서의 일"'
+          : '改成自然表达："那天晚上"、"仓库出事那次"、"码头上的事"',
     });
   }
 
@@ -273,7 +278,7 @@ export function validatePostWrite(
     });
   }
 
-  violations.push(...detectParagraphShapeWarnings(content, "zh"));
+  violations.push(...detectParagraphShapeWarnings(content, languageOverride ?? genreProfile.language));
 
   // 11. Book-level prohibitions
   // Short prohibitions (2-30 chars): exact substring match
@@ -354,14 +359,13 @@ function detectFirstPersonInnerStateSlip(content: string): string | null {
 export function detectCrossChapterRepetition(
   currentContent: string,
   recentChaptersContent: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): ReadonlyArray<PostWriteViolation> {
   if (!recentChaptersContent || recentChaptersContent.length < 100) return [];
 
   const violations: PostWriteViolation[] = [];
-  const isEnglish = language === "en";
 
-  if (isEnglish) {
+  if (language === "en") {
     // Extract 3-word phrases from current chapter
     const words = currentContent.toLowerCase().replace(/[^\w\s']/g, "").split(/\s+/).filter(w => w.length > 2);
     const phraseCounts = new Map<string, number>();
@@ -383,6 +387,31 @@ export function detectCrossChapterRepetition(
         severity: "warning",
         description: `${crossRepeats.length} repeated phrases also found in recent chapters: ${crossRepeats.slice(0, 5).join(", ")}`,
         suggestion: "Vary action verbs and descriptive phrases to avoid cross-chapter repetition",
+      });
+    }
+  } else if (language === "ko") {
+    // Korean: 6-char Hangul ngrams
+    const chars = currentContent.replace(/[\s\n\r]/g, "");
+    const phraseCounts = new Map<string, number>();
+    for (let i = 0; i < chars.length - 5; i++) {
+      const phrase = chars.slice(i, i + 6);
+      if (/[\uac00-\ud7af\u3131-\u318e]{6}/u.test(phrase)) {
+        phraseCounts.set(phrase, (phraseCounts.get(phrase) ?? 0) + 1);
+      }
+    }
+    const recentClean = recentChaptersContent.replace(/[\s\n\r]/g, "");
+    const crossRepeats: string[] = [];
+    for (const [phrase, count] of phraseCounts) {
+      if (count >= 2 && recentClean.includes(phrase)) {
+        crossRepeats.push(`"${phrase}"(×${count})`);
+      }
+    }
+    if (crossRepeats.length >= 3) {
+      violations.push({
+        rule: "장 간 반복",
+        severity: "warning",
+        description: `${crossRepeats.length}개의 반복 구절이 최근 장에서도 등장합니다: ${crossRepeats.slice(0, 5).join(", ")}`,
+        suggestion: "동작 묘사와 장면 용어를 바꿔 장 간 기계적 반복을 피하세요",
       });
     }
   } else {
@@ -418,7 +447,7 @@ export function detectCrossChapterRepetition(
 export function detectParagraphLengthDrift(
   currentContent: string,
   recentChaptersContent: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): ReadonlyArray<PostWriteViolation> {
   if (!recentChaptersContent || recentChaptersContent.trim().length === 0) return [];
 
@@ -445,12 +474,19 @@ export function detectParagraphLengthDrift(
           description: `Average paragraph length dropped from ${Math.round(recent.averageLength)} to ${Math.round(current.averageLength)} characters (${dropPercent}% shorter) compared with recent chapters.`,
           suggestion: "Let action, observation, and reaction share paragraphs more often instead of cutting every beat into a single short line.",
         }
-      : {
-          rule: "段落密度漂移",
-          severity: "warning",
-          description: `当前章平均段长从近期章节的${Math.round(recent.averageLength)}字降到${Math.round(current.averageLength)}字，缩短了${dropPercent}%。`,
-          suggestion: "不要把每个动作都切成单独短句；适当把动作、观察和反应并入同一段，恢复段落层次。",
-        },
+      : language === "ko"
+        ? {
+            rule: "문단 밀도 변동",
+            severity: "warning",
+            description: `현재 장의 평균 문단 길이가 최근 장의 ${Math.round(recent.averageLength)}자에서 ${Math.round(current.averageLength)}자로 줄었습니다(${dropPercent}% 단축).`,
+            suggestion: "모든 동작을 짧은 한 줄로 나누지 말고, 동작·관찰·반응을 적절히 같은 문단에 묶어 문단의 층위를 회복하세요.",
+          }
+        : {
+            rule: "段落密度漂移",
+            severity: "warning",
+            description: `当前章平均段长从近期章节的${Math.round(recent.averageLength)}字降到${Math.round(current.averageLength)}字，缩短了${dropPercent}%。`,
+            suggestion: "不要把每个动作都切成单独短句；适当把动作、观察和反应并入同一段，恢复段落层次。",
+          },
   ];
 }
 
@@ -543,7 +579,7 @@ function validatePostWriteEnglish(
 function appendParagraphShapeWarnings(
   violations: PostWriteViolation[],
   content: string,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): void {
   const shape = analyzeParagraphShape(content, language);
   if (shape.paragraphs.length < 4) return;
@@ -557,12 +593,19 @@ function appendParagraphShapeWarnings(
             description: `${shape.shortParagraphs.length} of ${shape.paragraphs.length} paragraphs are shorter than ${shape.shortThreshold} characters.`,
             suggestion: "Merge adjacent action, observation, and reaction beats so the chapter does not collapse into one-line paragraphs.",
           }
-        : {
-            rule: "段落过碎",
-            severity: "warning",
-            description: `${shape.paragraphs.length}个段落里有${shape.shortParagraphs.length}个不足${shape.shortThreshold}字，段落被切得过碎。`,
-            suggestion: "把相邻的动作、观察、反应适当并段，不要每句话都单独起段。",
-          },
+        : language === "ko"
+          ? {
+              rule: "문단 파편화",
+              severity: "warning",
+              description: `${shape.paragraphs.length}개 문단 중 ${shape.shortParagraphs.length}개가 ${shape.shortThreshold}자보다 짧아 문단이 지나치게 잘게 잘렸습니다.`,
+              suggestion: "인접한 동작·관찰·반응을 적절히 묶어, 모든 문장을 한 문단씩 분리하지 마세요.",
+            }
+          : {
+              rule: "段落过碎",
+              severity: "warning",
+              description: `${shape.paragraphs.length}个段落里有${shape.shortParagraphs.length}个不足${shape.shortThreshold}字，段落被切得过碎。`,
+              suggestion: "把相邻的动作、观察、反应适当并段，不要每句话都单独起段。",
+            },
     );
   }
 
@@ -575,19 +618,26 @@ function appendParagraphShapeWarnings(
             description: `${shape.maxConsecutiveShort} short paragraphs appear back to back.`,
             suggestion: "Break the one-beat-per-paragraph rhythm by folding connected beats into fuller paragraphs.",
           }
-        : {
-            rule: "连续短段",
-            severity: "warning",
-            description: `连续出现${shape.maxConsecutiveShort}个不足${shape.shortThreshold}字的短段，容易形成短句堆砌。`,
-            suggestion: "把连续的碎动作重新编组，至少让一个段落承载完整的动作链或情绪推进。",
-          },
+        : language === "ko"
+          ? {
+              rule: "연속 짧은 문단",
+              severity: "warning",
+              description: `${shape.shortThreshold}자 미만의 짧은 문단이 ${shape.maxConsecutiveShort}개 연속되어 짧은 문장이 쌓이기 쉽습니다.`,
+              suggestion: "연속된 잘게 잘린 동작을 다시 묶어, 최소 한 문단은 완전한 동작 체인이나 감정 전개를 담게 하세요.",
+            }
+          : {
+              rule: "连续短段",
+              severity: "warning",
+              description: `连续出现${shape.maxConsecutiveShort}个不足${shape.shortThreshold}字的短段，容易形成短句堆砌。`,
+              suggestion: "把连续的碎动作重新编组，至少让一个段落承载完整的动作链或情绪推进。",
+            },
     );
   }
 }
 
 export function detectParagraphShapeWarnings(
   content: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): ReadonlyArray<PostWriteViolation> {
   const violations: PostWriteViolation[] = [];
   appendParagraphShapeWarnings(violations, content, language);
@@ -599,7 +649,7 @@ function isDialogueParagraph(paragraph: string): boolean {
   return /^[""「『'《]/.test(trimmed) || /^[""]/.test(trimmed) || /^——/.test(trimmed);
 }
 
-function analyzeParagraphShape(content: string, language: "zh" | "en"): ParagraphShape {
+function analyzeParagraphShape(content: string, language: "zh" | "ko" | "en"): ParagraphShape {
   const paragraphs = extractParagraphs(content);
   // Exclude dialogue lines from short paragraph counting — dialogue is naturally short
   const narrativeParagraphs = paragraphs.filter((p) => !isDialogueParagraph(p));
@@ -714,7 +764,7 @@ export function detectDuplicateTitle(
 export function resolveDuplicateTitle(
   newTitle: string,
   existingTitles: ReadonlyArray<string>,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
   options?: {
     readonly content?: string;
   },
@@ -768,7 +818,7 @@ export function resolveDuplicateTitle(
 function detectTitleCollapse(
   newTitle: string,
   existingTitles: ReadonlyArray<string>,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): ReadonlyArray<PostWriteViolation> {
   const recentTitles = existingTitles
     .map((title) => title.trim())
@@ -803,19 +853,26 @@ function detectTitleCollapse(
           description: `Chapter title "${newTitle}" keeps leaning on the recent "${titlePressure.repeatedToken}" title shell.`,
           suggestion: "Rename the chapter around a new image, action, consequence, or character focus.",
         }
-      : {
-          rule: "title-collapse",
-          severity: "warning",
-          description: `章节标题"${newTitle}"仍在沿用近期围绕“${titlePressure.repeatedToken}”的命名壳。`,
-          suggestion: "换一个新的意象、动作、后果或人物焦点来命名。",
-        },
+      : language === "ko"
+        ? {
+            rule: "title-collapse",
+            severity: "warning",
+            description: `챕터 제목 "${newTitle}"이 최근 "${titlePressure.repeatedToken}" 제목 틀을 계속 따르고 있습니다.`,
+            suggestion: "새로운 이미지, 행동, 결과 또는 캐릭터 초점을 중심으로 챕터를 이름 붙이세요.",
+          }
+        : {
+            rule: "title-collapse",
+            severity: "warning",
+            description: `章节标题"${newTitle}"仍在沿用近期围绕“${titlePressure.repeatedToken}”的命名壳。`,
+            suggestion: "换一个新的意象、动作、后果或人物焦点来命名。",
+          },
   ];
 }
 
 function regenerateDuplicateTitle(
   baseTitle: string,
   existingTitles: ReadonlyArray<string>,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
   content?: string,
 ): string | undefined {
   if (!content || !content.trim()) {
@@ -837,7 +894,7 @@ function regenerateDuplicateTitle(
 function regenerateCollapsedTitle(
   baseTitle: string,
   existingTitles: ReadonlyArray<string>,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
   content?: string,
 ): string | undefined {
   if (!content || !content.trim()) {

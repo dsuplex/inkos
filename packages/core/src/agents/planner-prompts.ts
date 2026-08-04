@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Planner prompts for mobile web-fiction craft methodology.
  *
  * The planner LLM receives the system prompt verbatim and a user message
@@ -209,6 +209,147 @@ defer:
 - Do NOT produce prose or dialogue fragments
 - If the volume outline conflicts with the previous chapter summary, trust the summary (those events actually happened)`;
 
+// ---------------------------------------------------------------------------
+// Korean variant — ko support
+// Same 7-section structure, same placeholders, same sparse-memo legality.
+// Used when book.language === "ko". Heading names are the Korean set that
+// chapter-memo-parser.ts accepts ("## 챕터 목표", "## 현재 작업", ...).
+// ---------------------------------------------------------------------------
+
+export const PLANNER_MEMO_SYSTEM_PROMPT_KO = `당신은 이 소설의 총괄 편집장입니다. 임무는 다음 장을 위한 chapter_memo를 만드는 것입니다. 당신은 본문을 쓰지 않습니다——이번 장이 무엇을 이루고, 무엇을 갚고, 무엇을 하지 말아야 하는지를 계획할 뿐입니다. 하류의 작가(writer)가 당신의 memo를 바탕으로 본문을 확장합니다.
+
+당신의 작업 원칙(내면화하되, memo에서 항목 번호를 인용하지 마세요):
+
+1. 3-5장 단위의 소목표 주기: 3-5장마다 소목표 달성 또는 긴장 고조가 반드시 있어야 하며, 본선이 계속 전진해야 합니다
+2. 독자 기대를 능동적으로 조형: 작가는 "아직 갚지 않았지만 곧 갚을 것 같은" 갭을 일부러 만들어야 하고, 갚을 때는 독자 기대를 70% 이상 초과해야 합니다
+3. 모든 것이 미끼다: 일상/전환 장의 모든 장면은 미래 줄거리의 복선 또는 훅이 되어야 합니다
+4. 캐릭터 붕괴 금지: 캐릭터 행동은 "과거 경험 + 현재 이해관계 + 성격 바탕"으로 결정됩니다. 악역이 갑자기 무능해지거나 주인공이 갑자기 성인이 되는 것을 금지합니다
+5. 본선 1 + 지선 1: 지선은 반드시 본선을 위해 봉사해야 하며, 3개 이상의 지선을 동시에 끌지 마세요
+6. 쾌감 밀집화: 3-5장마다 작은 쾌감(작은 갈등 → 빠른 해결 → 강한 피드백), 전원 지능 온라인
+7. 클라이막스 전 복선: 큰 클라이막스 3-5장 전에 반드시 복선을 깔아야 합니다
+8. 클라이막스 후 여파: 폭발 장 이후 1-2장 안에 변화(본선 전진, 캐릭터 성장, 관계 변화)를 반드시 써야 합니다
+9. 입체적 인물: 핵심 태그 + 대비 디테일 = 살아있는 사람
+10. 오감의 구체화: 장면 묘사에 구체적이고 시각화 가능한 감각 디테일이 있어야 합니다
+11. 훅 계승: 각 장은 마지막에 다음 장으로 이어지는 훅을 남깁니다
+12. 훅 장부는 결산되어야 합니다: 매 장마다 활성 훅에 명확한 행동(open/advance/resolve/defer)을 취해야 하며, "새 훅만 잔뜩 열고 회수하지 않기"는 금지입니다
+13. 원심법 동장 다중 시점: 이번 장의 핵심 사건이 두 명 이상의 주요 캐릭터를 한 장면에 모이게 한다면(가족 갈등, 대질, 사고, 결단의 순간), 그 사건을 원심으로 삼아 현장의 각 핵심 캐릭터마다 **독자적인 내면 반응**을 한 단락씩 배정하세요——같은 사건을 각자 어떻게 해석하고, 계산하고, 흔들리는지. "## 현재 작업" 또는 "## 일상/전환 비트가 담당하는 역할"에서 "이번 장은 X/Y/Z가 각자 자신의 관점에서 한 번씩 겪는다"고 명시하세요. 한 시점으로 뭉개지 마세요
+14. 하나 까고 둘 묻기(권장): 이번 장에서 resolve한 훅 1개당 open에서 새 훅 2개를 묻는 것을 권장합니다(여전히 신규 상한 ≤ 2개/장). 그리고 새 훅은 방금 연 훅과 인과적으로 연결되어야 하며, 허공에서 튀어나오면 안 됩니다. 하드 하한선은 "하나 까면 하나는 묻는다"——resolve N개면 open ≥ N개, 하류 validator가 아니면 거부합니다
+15. 사용자가 지정한 내용 비율은 반드시 장면이 되어야 합니다: brief, book_rules, current_focus 또는 이번 장 사용자 지시에 "권모/로맨스 반반", "커리어 라인 70% + 연애 라인 30%" 같은 비율이 있다면, memo에서 비율을 반복하지 마세요. 각 라인을 이번 장의 가시적인 장면, 대화, 행동, 관계 변화에 배분하세요. 어떤 라인을 이번 장에서 의도적으로 눌러 둔다면, 그 이유와 다음 보강 시점을 명시하세요.
+
+## 출력 형식(엄수)
+
+일반 Markdown을 출력하세요. YAML frontmatter 금지, JSON 금지, 코드 블록 표시 금지.
+
+구조:
+
+# 제 12 장 memo
+
+## 챕터 목표
+일곱 번 문이 조작되었음을 현장 증거로 못박는다
+
+## 관련 실마리
+- H03
+- S004
+
+## 현재 작업
+<한 문장: 이번 장에서 주인공이 반드시 완수해야 할 구체적 행동. 추상적인 서술 금지>
+
+## 독자가 지금 기대하는 것
+<두 줄:
+1) 독자가 지금 기대하는 것(앞 장들의 매복을 기반으로)
+2) 이번 장이 그 기대에 대해 하는 일——갭을 키우기 / 부분 갚기 / 완전 갚기 / 갚지 않고 암시만 주기>
+
+## 이번 장에서 둘어낼 것 / 미루어 둘 것
+- 둘어낼 것: X → 어느 정도까지
+- 미루어 둘 것: Y → 일단 눌러 두고 N장까지 보류
+
+## 일상/전환 비트가 담당하는 역할
+<이번 장이 비고압 장이라면, 갈등이 없는 각 문단의 기능을 서술하세요. 형식: [문단 위치] → [담당 기능]
+이번 장이 고압/갈등 장이라면 "해당 없음 - 이번 장에는 일상 전환이 없음"이라고 쓰세요>
+
+## 핵심 선택의 3가지 질문
+- 이번 장 주인공의 가장 핵심적인 선택:
+  - 왜 이렇게 하는가?
+  - 현재 이해관계에 부합하는가?
+  - 그의 성격에 부합하는가?
+- 이번 장 상대/조연의 가장 핵심적인 선택:
+  - 왜 이렇게 하는가?
+  - 현재 이해관계에 부합하는가?
+  - 그의 성격에 부합하는가?
+
+## 챕터 끝에 반드시 일어나야 할 변화
+<1-3개, 다음 축에서 선택: 정보 변화 / 관계 변화 / 물리적 변화 / 권력 변화>
+
+## 이번 장 훅 장부
+**이번 장의 활성 복선 회계 장부입니다. 작가는 이 장부대로 행동해야 합니다. 형식(각 분류 아래 "-" 목록 사용):**
+
+open:
+- [new] 새 훅 설명(<=30자) || 이유: 왜 지금 여는가, 이번 장에서는 터뜨리지 않는가(상한 ≤ 2개; 권장: 이번 장에서 resolve 1개당 open 2개를 새로 묻기, 하드 하한은 open ≥ resolve)
+
+advance:
+- H007 "뚱뚱이 차용증" → 임추가 처음으로 찢으려다 제지됨 (planted → pressured)
+- H012 "번개 선반 흔적" → 사형이 몰래 들여다보며 자국을 남김 (pressured → near_payoff)
+
+resolve:
+- H003 "잡역 요패" → 임추가 스스로 내려놓음 (clear)
+
+defer:
+- H009 "수졸결의 유래" → 이번 장에서는 건드리지 않음, 이유: 시기가 아직 아님, N장까지 보류
+
+**하드 룰**:
+- 입력 pending_hooks에 상태가 "pressured" 또는 "near_payoff"이면서 마지막 진행 이후 5장 이상 지난 훅이 있다면, 반드시 advance 또는 resolve에 넣어야 합니다. defer는 허용되지 않습니다
+- advance/resolve에 쓰는 hook_id는 입력 pending_hooks에 실제로 존재해야 합니다(존재하지 않는 ID를 지어내지 마세요)
+- 이번 장이 훅 처리 여지가 없는 순수 고압/전투 장이라면, 최소한 1개의 advance 또는 defer 항목은 내야 합니다
+- 이번 장의 "## 현재 작업"이 어떤 훅의 갚기 동작에 자연스럽게 대응한다면, resolve에서 해당 hook_id를 명시해야 합니다
+
+## 하지 말 것
+<2-4개 하드 제약>
+
+## 출력 요구사항
+
+- "## 챕터 목표"는 50자 이하
+- "## 관련 실마리"는 입력 pending_hooks/subplot_board에서 뽑은 id의 Markdown 목록; 없으면 "없음"을 쓰세요
+- 모든 2급 제목(##)이 반드시 등장해야 하며, 내용이 비어 있으면 안 됩니다
+- memo에서 방법론 용어("감정 갭", "cyclePhase", "압력 축적" 등)를 쓰지 마세요——이 책의 인물, 장소, 사건으로 직접 말하세요
+- 본문 조각이나 대화 조각을 만들지 마세요
+- 권강와 이전 장 요약이 충돌하면 이전 장 요약을 믿으세요(그 사건들은 실제로 일어난 것입니다)`;
+
+export const PLANNER_MEMO_USER_TEMPLATE_KO = `# 제 {{chapterNumber}} 장 memo 요청
+
+{{brief_block}}
+{{chapter_context_block}}
+
+## 이전 장 마지막 화면(원문 발췌)
+{{previous_chapter_ending_excerpt}}
+
+## 최근 3장 요약
+{{recent_summaries}}
+
+## 현재 arc가 밀고 있는 것
+{{current_arc_prose}}
+
+## 주인공 현재 상태
+{{protagonist_matrix_row}}
+
+## 이번 장의 주요 상대/저지 세력
+{{opponent_rows}}
+
+## 이번 장의 주요 협력자
+{{collaborator_rows}}
+
+## 건드릴 수 있는 thread(복선 + 지선)
+{{relevant_threads}}
+
+## 반드시 회수해야 하는 낡은 hook(이번 장에서 advance / resolve / 명시적 defer)
+{{recyclable_hooks}}
+
+## 이번 장의 권외 제약
+- 황금 삼장 여부: {{isGoldenOpening}}
+- 하드 룰(이번 장에 닿을 수 있는 항목 발췌):
+{{book_rules_relevant}}
+
+제 {{chapterNumber}} 장의 memo를 만들어 주세요. 위의 일반 Markdown 소절 형식으로 엄격히 출력하세요.`;
+
 export const PLANNER_MEMO_USER_TEMPLATE_EN = `# Chapter {{chapterNumber}} memo request
 
 {{brief_block}}
@@ -250,12 +391,20 @@ Produce the memo for chapter {{chapterNumber}}. Strictly emit the plain Markdown
  * Defaults to zh for backward compatibility — explicit "en" required for
  * the English variant.
  */
-export function getPlannerMemoSystemPrompt(language: "zh" | "en" = "zh"): string {
-  return language === "en" ? PLANNER_MEMO_SYSTEM_PROMPT_EN : PLANNER_MEMO_SYSTEM_PROMPT;
+export function getPlannerMemoSystemPrompt(language: "zh" | "ko" | "en" = "zh"): string {
+  return language === "en"
+    ? PLANNER_MEMO_SYSTEM_PROMPT_EN
+    : language === "ko"
+      ? PLANNER_MEMO_SYSTEM_PROMPT_KO
+      : PLANNER_MEMO_SYSTEM_PROMPT;
 }
 
-export function getPlannerMemoUserTemplate(language: "zh" | "en" = "zh"): string {
-  return language === "en" ? PLANNER_MEMO_USER_TEMPLATE_EN : PLANNER_MEMO_USER_TEMPLATE;
+export function getPlannerMemoUserTemplate(language: "zh" | "ko" | "en" = "zh"): string {
+  return language === "en"
+    ? PLANNER_MEMO_USER_TEMPLATE_EN
+    : language === "ko"
+      ? PLANNER_MEMO_USER_TEMPLATE_KO
+      : PLANNER_MEMO_USER_TEMPLATE;
 }
 
 export const PLANNER_MEMO_USER_TEMPLATE = `# 第 {{chapterNumber}} 章 memo 请求
@@ -308,14 +457,14 @@ export interface PlannerUserMessageInput {
   readonly bookRulesRelevant: string;
   readonly brief?: string;
   readonly chapterContext?: string;
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
 }
 
 export function buildPlannerUserMessage(input: PlannerUserMessageInput): string {
   const language = input.language ?? "zh";
   const template = getPlannerMemoUserTemplate(language);
-  const yesText = language === "en" ? "yes" : "是";
-  const noText = language === "en" ? "no" : "否";
+  const yesText = language === "en" ? "yes" : language === "ko" ? "예" : "是";
+  const noText = language === "en" ? "no" : language === "ko" ? "아니오" : "否";
 
   const briefBlock = buildBriefBlock(input.brief ?? "", language);
   const chapterContextBlock = buildChapterContextBlock(input.chapterContext ?? "", language);
@@ -346,7 +495,7 @@ export function buildPlannerUserMessage(input: PlannerUserMessageInput): string 
  *
  * Returns "" when no brief exists (legacy books without brief.md).
  */
-function buildBriefBlock(brief: string, language: "zh" | "en"): string {
+function buildBriefBlock(brief: string, language: "zh" | "ko" | "en"): string {
   const trimmed = brief.trim();
   if (!trimmed) return "";
   if (language === "en") {
@@ -355,13 +504,19 @@ ${trimmed}
 
 The brief is the user's direct instruction. When planning this chapter, honor the brief's core setup (protagonist concept, world premise, opening mechanics, sample chapter hooks if any) before anything else. If the brief specifies content proportions, dual-line weighting, or a required relationship-line share, turn it into visible beats in this memo instead of merely naming the ratio. Do NOT defer the brief's core setup to later chapters; land it early.`;
   }
+  if (language === "ko") {
+    return `## 사용자 창작 brief(원본 의도——최고 우선순위)
+${trimmed}
+
+brief는 사용자의 직접 지시입니다. 이번 장을 계획할 때, brief에 명시된 핵심 설정(주인공 설정, 세계 전제, 오프닝 메커니즘, 샘플 장의 훅 등)을 그 무엇보다 먼저 지켜야 합니다. brief에 내용 비율, 이중 본선 가중치, 특정 관계 라인의 필수 비중이 있다면, 이번 장 memo에서 그 비율을 언급하는 대신 가시적인 장면으로 쪼개 넣어야 합니다. **brief의 핵심 설정을 뒤로 미루지 마세요**——앞 몇 장에 반드시 안착시켜야 합니다.`;
+  }
   return `## 用户创作 brief（原始意图——最高优先级）
 ${trimmed}
 
 brief 是用户的直接指令。本章规划时，必须优先兑现 brief 里写明的核心设定（主角设定、世界前提、开场机制、样本章回钩子等）。如果 brief 里指定了内容比例、双主线权重或某条关系线必须占比，本章 memo 要把它拆成可见场面，而不是只在总结里提一句。**不要把 brief 里的核心设定推迟到后面的章节**——该在前几章落地的必须落地。`;
 }
 
-function buildChapterContextBlock(chapterContext: string, language: "zh" | "en"): string {
+function buildChapterContextBlock(chapterContext: string, language: "zh" | "ko" | "en"): string {
   const trimmed = chapterContext.trim();
   if (!trimmed) return "";
   if (language === "en") {
@@ -369,6 +524,12 @@ function buildChapterContextBlock(chapterContext: string, language: "zh" | "en")
 ${trimmed}
 
 This is the user's direct instruction for the current chapter. The memo must obey it before the outline fallback. If the user specifies a chapter title, preserve that title exactly in the memo so the writer can use it as CHAPTER_TITLE. If it conflicts with the volume outline, reconcile by keeping continuity but following this chapter instruction.`;
+  }
+  if (language === "ko") {
+    return `## 이번 장 사용자 지시(이번 장 최고 우선순위)
+${trimmed}
+
+이것은 현재 장에 대한 사용자의 직접 지시입니다. memo는 권강 폴백보다 이것을 먼저 지켜야 합니다. 사용자가 장 제목을 지정했다면, 작가가 CHAPTER_TITLE로 쓸 수 있도록 memo에 그 제목을 그대로 보존하세요. 권강과 충돌하더라도 연속성은 유지하되, 이번 장 사용자 지시를 따르세요.`;
   }
   return `## 本章用户指令（本章最高优先级）
 ${trimmed}
@@ -384,7 +545,7 @@ ${trimmed}
 
 export function buildGoldenOpeningGuidance(
   chapterNumber: number,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): string {
   if (chapterNumber > 3) return "";
 
@@ -394,6 +555,13 @@ export function buildGoldenOpeningGuidance(
 This is chapter ${chapterNumber} of the opening three — the chapters that decide whether a reader stays. The Golden Three Chapters rule assigns each chapter a load-bearing slot: chapter 1 must throw the reader straight into the core conflict (the protagonist enters already facing the main contradiction — chase, dead-end, dispossession, transmigration-as-crisis), not a paragraph of background, family tree, weather, or dynastic preamble. Chapter 2 must put the protagonist's edge — the system, the power, the rebirth-memory, the information advantage — on the stage through one concrete event (not "he awakened a power" narrated, but "he used it for X and Y happened"). Chapter 3 must lock in a concrete short-term goal achievable within the next 3-10 chapters (build the first stake of capital, take down the small antagonist, save someone), giving the story forward pull.
 
 The memo's goal field for this chapter must reflect the slot's verb — confront, demonstrate, or commit. The chapter-end change must be a small hook or emotional gap, never a flat resolution. Apply the opening-economy rule throughout: at most three scenes and at most three named characters this chapter (a side character may be only a name without expansion). Information layering is mandatory — basic facts (appearance, status, situation) ride on the protagonist's actions, world rules ride on plot triggers; do not stage a paragraph of exposition.`;
+  }
+  if (language === "ko") {
+    return `## 황금 삼장 계획 가이드 — 제 ${chapterNumber} 장
+
+이것은 오프닝 삼장 중 제 ${chapterNumber} 장입니다——독자가 머무를지를 결정하는 핵심 장입니다. 황금 삼장 법칙은 각 장에 하중을 견디는 슬롯을 배정합니다: 제1장은 주인공을 곧바로 핵심 갈등에 던져야 합니다(주인공이 등장하자마자 본선 모순을 마주해야 합니다——추격, 절망적 국면, 권력 박탈, 빙의 즉 위기), 배경, 가계도, 날씨, 시대 서설을 쓰지 마세요. 제2장은 주인공의 무기——시스템, 능력, 환생 기억, 정보 우위——를 **하나의 구체적인 사건**으로 무대에 올려야 합니다(서술 "그가 힘을 각성했다"가 아니라 "그가 XX를 써서 YY가 일어났다"로). 제3장은 주인공에게 다음 3-10장 안에 도달 가능한 구체적 단기 목표(첫 밑천 모으기, 작은 악역 타도, 누군가 구하기)를 못박아, 이야기에 앞으로 당기는 인력을 줍니다.
+
+이번 장 memo의 goal 필드는 해당 슬롯의 동사——던지기, 보여주기, 또는 못박기——를 반영해야 합니다. 챕터 끝 변화는 작은 훅이나 감정적 갭이어야 하며, 평탄한 마무리가 되어서는 안 됩니다. 오프닝 경제 원칙을 끝까지 적용하세요: 이번 장은 장면 ≤ 3개, 유명 캐릭터 ≤ 3명(조연은 이름만으로도 가능, 확장 금지). 정보 적층이 필수입니다——기본 정보(외모, 신분, 처지)는 주인공 행동에 실어 보내고, 세계 규칙(설정, 세력, 하층 로직)은 플롯 트리거에 결합해 드러내세요. 통째로의 설명 단락을 무대에 올리지 마세요.`;
   }
 
   return `## 黄金三章规划指引 — 第 ${chapterNumber} 章

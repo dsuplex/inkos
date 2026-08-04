@@ -1,4 +1,4 @@
-import { Type, type Static } from "@mariozechner/pi-ai";
+﻿import { Type, type Static } from "@mariozechner/pi-ai";
 import type { AgentTool, AgentToolResult, AgentToolUpdateCallback } from "@mariozechner/pi-agent-core";
 import type { PipelineRunner } from "../pipeline/runner.js";
 import { ArchitectIncompleteFoundationError } from "../agents/architect.js";
@@ -341,7 +341,7 @@ function proposedActionFallbackTitle(action: ProposeActionParamsType["action"], 
     case "connect_choice":
       return isZh ? "连接选项" : "Connect choice";
     case "remove_node":
-      return isZh ? "删除节点" : "Remove node";
+return isZh ? "删除节点" : "Remove node";
   }
 }
 
@@ -403,7 +403,7 @@ function compactPlayStartPayload(value: ProposeActionParamsType["playStart"]): N
 
 function proposedActionPayload(
   params: ProposeActionParamsType,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): ActionPayload | undefined {
   const payload: ActionPayload = {};
   if (params.action === "create_book") {
@@ -491,7 +491,7 @@ function assertExecutableProposedAction(params: ProposeActionParamsType, payload
 }
 
 export function createProposeActionTool(
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
   options: ProposeActionToolOptions = {},
 ): AgentTool<typeof ProposeActionParams> {
   return {
@@ -505,8 +505,9 @@ export function createProposeActionTool(
       const targetSessionKind = proposedActionSessionKind(params.action);
       const targetRoute = proposedActionTargetRoute(params.action);
       const isZh = language === "zh";
-      const title = params.title?.trim() || proposedActionFallbackTitle(params.action, isZh);
-      const summary = params.summary?.trim() || proposedActionFallbackSummary(params.action, isZh);
+      const isKo = language === "ko";
+      const title = params.title?.trim() || proposedActionFallbackTitle(params.action, isZh || isKo);
+      const summary = params.summary?.trim() || proposedActionFallbackSummary(params.action, isZh || isKo);
       const proposedPayload = validateProposedActionPayload(proposedActionPayload(params, language));
       if (proposedPayload.error) {
         throw new Error(`Invalid proposed action payload: ${proposedPayload.error}`);
@@ -673,7 +674,7 @@ export function createSubAgentTool(
   options: {
     readonly actionPayload?: ActionPayload;
     readonly architectCreateOnly?: boolean;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
   } = {},
 ): AgentTool<any> {
   const sessionIsZh = (options.language ?? "zh") !== "en";
@@ -1372,7 +1373,7 @@ type ShortFictionRunParamsType = Static<typeof ShortFictionRunParams>;
 // 抛出带合法范围的双语错误，不让任务开跑后才在 runner 中途失败。
 function assertShortRunCharsPerChapter(
   value: number | undefined,
-  language: "zh" | "en",
+  language: "zh" | "ko" | "en",
 ): void {
   if (value === undefined) return;
   const { min, max } = shortRunCharsPerChapterRange(language);
@@ -1383,7 +1384,7 @@ function assertShortRunCharsPerChapter(
 export function createShortFictionRunTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "ko" | "en" } = {},
 ): AgentTool<typeof ShortFictionRunParams> {
   return {
     name: "short_fiction_run",
@@ -1575,7 +1576,7 @@ type ScriptCreateParamsType = Static<typeof ScriptCreateParams>;
 export function createScriptCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "ko" | "en" } = {},
 ): AgentTool<typeof ScriptCreateParams> {
   return {
     name: "script_create",
@@ -1666,7 +1667,7 @@ type StoryboardCreateParamsType = Static<typeof StoryboardCreateParams>;
 export function createStoryboardCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "ko" | "en" } = {},
 ): AgentTool<typeof StoryboardCreateParams> {
   return {
     name: "storyboard_create",
@@ -1763,7 +1764,7 @@ type InteractiveFilmCreateParamsType = Static<typeof InteractiveFilmCreateParams
 export function createInteractiveFilmCreationTool(
   pipeline: PipelineRunner,
   projectRoot: string,
-  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "en" } = {},
+  options: { readonly actionPayload?: ActionPayload; readonly language?: "zh" | "ko" | "en" } = {},
 ): AgentTool<typeof InteractiveFilmCreateParams> {
   return {
     name: "interactive_film_create",
@@ -2076,7 +2077,7 @@ const PlayStepParams = Type.Object({
 type PlayStepParamsType = Static<typeof PlayStepParams>;
 
 export interface PlayStepToolOptions {
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
     readonly worldId: string;
@@ -2107,7 +2108,7 @@ const PlayReviseParams = Type.Object({
 type PlayReviseParamsType = Static<typeof PlayReviseParams>;
 
 export interface PlayReviseToolOptions {
-  readonly language?: "zh" | "en";
+  readonly language?: "zh" | "ko" | "en";
   readonly runnerFactory?: (input: {
     readonly projectRoot: string;
     readonly worldId: string;
@@ -2198,7 +2199,7 @@ type PlayEditParamsType = Static<typeof PlayEditParams>;
 export function createPlayEditTool(
   projectRoot: string,
   sessionId: string,
-  language: "zh" | "en" = "zh",
+  language: "zh" | "ko" | "en" = "zh",
 ): AgentTool<typeof PlayEditParams> {
   return {
     name: "play_edit",

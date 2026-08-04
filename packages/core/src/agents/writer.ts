@@ -138,15 +138,17 @@ export class WriterAgent extends BaseAgent {
     return "writer";
   }
 
-  private localize(language: "zh" | "en", messages: { zh: string; en: string }): string {
-    return language === "en" ? messages.en : messages.zh;
-  }
+private localize(language: "zh" | "ko" | "en", messages: { zh: string; ko: string; en: string }): string {
+    if (language === "en") return messages.en;
+    if (language === "ko") return messages.ko;
+    return messages.zh;
+}
 
-  private logInfo(language: "zh" | "en", messages: { zh: string; en: string }): void {
+  private logInfo(language: "zh" | "ko" | "en", messages: { zh: string; ko: string; en: string }): void {
     this.ctx.logger?.info(this.localize(language, messages));
   }
 
-  private logWarn(language: "zh" | "en", messages: { zh: string; en: string }): void {
+  private logWarn(language: "zh" | "ko" | "en", messages: { zh: string; ko: string; en: string }): void {
     this.ctx.logger?.warn(this.localize(language, messages));
   }
 
@@ -226,7 +228,7 @@ export class WriterAgent extends BaseAgent {
       resolvedLengthSpec,
     ), "longform.writer");
 
-    const creativeUserPrompt = input.chapterMemo && input.contextPackage && input.ruleStack
+const creativeUserPrompt = input.chapterMemo && input.contextPackage && input.ruleStack
       ? this.buildGovernedUserPrompt({
           chapterNumber,
           chapterMemo: input.chapterMemo,
@@ -278,8 +280,9 @@ export class WriterAgent extends BaseAgent {
 
     const creativeTemperature = input.temperatureOverride ?? 0.7;
 
-    this.logInfo(resolvedLanguage, {
+this.logInfo(resolvedLanguage, {
       zh: `阶段 1：创作正文（第${chapterNumber}章）`,
+      ko: `1단계: 본문 창작 (${chapterNumber}장)`,
       en: `Phase 1: creative writing for chapter ${chapterNumber}`,
     });
 
@@ -302,8 +305,9 @@ export class WriterAgent extends BaseAgent {
     }
 
     // ── Phase 2: State settlement (temperature 0.3) ──
-    this.logInfo(resolvedLanguage, {
+this.logInfo(resolvedLanguage, {
       zh: `阶段 2：状态结算（第${chapterNumber}章，${creative.wordCount}字）`,
+      ko: `2단계: 상태 정산 (${chapterNumber}장, ${creative.wordCount}자)`,
       en: `Phase 2: state settlement for chapter ${chapterNumber} (${creative.wordCount} words)`,
     });
     const isGovernedSettlement = Boolean(input.chapterIntent && input.contextPackage && input.ruleStack);
@@ -396,6 +400,7 @@ export class WriterAgent extends BaseAgent {
     if (ruleViolations.length > 0) {
       this.logWarn(resolvedLanguage, {
         zh: `后写校验：第${chapterNumber}章 ${postWriteErrors.length} 个错误，${postWriteWarnings.length} 个警告`,
+        ko: `사후 검증: ${chapterNumber}장 ${postWriteErrors.length}개 오류, ${postWriteWarnings.length}개 경고`,
         en: `Post-write: ${postWriteErrors.length} errors, ${postWriteWarnings.length} warnings in chapter ${chapterNumber}`,
       });
       for (const v of ruleViolations) {
@@ -405,6 +410,7 @@ export class WriterAgent extends BaseAgent {
     if (aiTellIssues.length > 0) {
       this.logWarn(resolvedLanguage, {
         zh: `AI 味检查：第${chapterNumber}章发现 ${aiTellIssues.length} 个问题`,
+        ko: `AI 맛 체크: ${chapterNumber}장에서 ${aiTellIssues.length}개 문제 발견`,
         en: `AI-tell check: ${aiTellIssues.length} issues in chapter ${chapterNumber}`,
       });
       for (const issue of aiTellIssues) {
@@ -414,6 +420,7 @@ export class WriterAgent extends BaseAgent {
     if (hookHealthIssues.length > 0) {
       this.logWarn(resolvedLanguage, {
         zh: `伏笔健康：第${chapterNumber}章发现 ${hookHealthIssues.length} 条警告`,
+        ko: `복선 건강: ${chapterNumber}장에서 ${hookHealthIssues.length}개 경고 발견`,
         en: `Hook health: ${hookHealthIssues.length} warning(s) in chapter ${chapterNumber}`,
       });
       for (const issue of hookHealthIssues) {
@@ -586,6 +593,7 @@ export class WriterAgent extends BaseAgent {
 
     this.logInfo(resolvedLang, {
       zh: `阶段 2a：提取第${params.chapterNumber}章事实`,
+      ko: `2a단계: ${params.chapterNumber}장 사실 추출`,
       en: `Phase 2a: observing facts for chapter ${params.chapterNumber}`,
     });
     const observerResponse = await this.chat(
@@ -600,6 +608,7 @@ export class WriterAgent extends BaseAgent {
     // Phase 2b: Reflector — merge observations into truth files
     this.logInfo(resolvedLang, {
       zh: "阶段 2b：把观察结果回写到真相文件",
+      ko: "2b단계: 관찰 결과를 진실 파일에 반영",
       en: "Phase 2b: reflecting observations into truth files",
     });
     const settlerSystem = buildSettlerSystemPrompt(
@@ -694,7 +703,7 @@ export class WriterAgent extends BaseAgent {
     bookDir: string,
     output: WriteChapterOutput,
     numericalSystem: boolean = true,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "ko" | "en" = "zh",
   ): Promise<void> {
     const chaptersDir = join(bookDir, "chapters");
     await mkdir(chaptersDir, { recursive: true });
@@ -787,7 +796,7 @@ export class WriterAgent extends BaseAgent {
     readonly dialogueFingerprints?: string;
     readonly relevantSummaries?: string;
     readonly parentCanon?: string;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
   }): string {
     const currentState = this.capLegacyContext("current_state", params.currentState, LEGACY_WRITER_CONTEXT_BUDGET.currentState);
     const ledger = this.capLegacyContext("particle_ledger", params.ledger, LEGACY_WRITER_CONTEXT_BUDGET.ledger);
@@ -898,7 +907,7 @@ ${lengthRequirementBlock}
     readonly ruleStack: RuleStack;
     readonly externalContext?: string;
     readonly lengthSpec: LengthSpec;
-    readonly language?: "zh" | "en";
+    readonly language?: "zh" | "ko" | "en";
     readonly varianceBrief?: string;
     readonly selectedEvidenceBlock?: string;
   }): string {
@@ -979,7 +988,7 @@ ${lengthRequirementBlock}
 - 只需输出 PRE_WRITE_CHECK、CHAPTER_TITLE、CHAPTER_CONTENT 三个区块`;
   }
 
-  private buildChapterContextBlock(externalContext: string | undefined, language: "zh" | "en"): string {
+  private buildChapterContextBlock(externalContext: string | undefined, language: "zh" | "ko" | "en"): string {
     const trimmed = externalContext?.trim();
     if (!trimmed) return "";
     if (language === "en") {
@@ -1018,7 +1027,7 @@ ${trimmed}
     chapterIntent: string,
     contextPackage: ContextPackage,
     ruleStack: RuleStack,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): string {
     const selectedContext = renderNarrativeSelectedContext(contextPackage.selectedContext, language)
       .replace(/^### /gm, "- ");
@@ -1071,11 +1080,12 @@ ${overrides}\n`;
   private verifyPreWriteCheckAlignsWithMemo(
     preWriteCheck: string,
     chapterNumber: number,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): void {
     if (!preWriteCheck || preWriteCheck.trim().length === 0) {
       this.logWarn(language, {
         zh: `第${chapterNumber}章 PRE_WRITE_CHECK 为空，无法对齐 chapter_memo`,
+        ko: `${chapterNumber}장 PRE_WRITE_CHECK가 비어 있어 chapter_memo와 정렬 불가`,
         en: `Chapter ${chapterNumber} PRE_WRITE_CHECK is empty; cannot verify memo alignment`,
       });
       return;
@@ -1097,12 +1107,13 @@ ${overrides}\n`;
     if (missing.length > 0) {
       this.logWarn(language, {
         zh: `第${chapterNumber}章 PRE_WRITE_CHECK 缺少 memo 章节检查：${missing.join("、")}`,
+        ko: `${chapterNumber}장 PRE_WRITE_CHECK에 memo 섹션 체크 누락: ${missing.join(", ")}`,
         en: `Chapter ${chapterNumber} PRE_WRITE_CHECK missing memo sections: ${missing.join(", ")}`,
       });
     }
   }
 
-  private buildLengthRequirementBlock(lengthSpec: LengthSpec, language: "zh" | "en"): string {
+  private buildLengthRequirementBlock(lengthSpec: LengthSpec, language: "zh" | "ko" | "en"): string {
     if (language === "en") {
       return `Requirements:
 - Target length: ${lengthSpec.target} words
@@ -1154,7 +1165,7 @@ ${overrides}\n`;
   async saveNewTruthFiles(
     bookDir: string,
     output: WriteChapterOutput,
-    language: "zh" | "en" = "zh",
+    language: "zh" | "ko" | "en" = "zh",
   ): Promise<void> {
     const storyDir = join(bookDir, "story");
     const writes: Array<Promise<void>> = [];
@@ -1258,7 +1269,7 @@ ${overrides}\n`;
   private async buildRuntimeStateArtifactsIfPresent(
     bookDir: string,
     delta: RuntimeStateDelta | undefined,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
     authoritativeChapterNumber?: number,
     allowReapply?: boolean,
   ): Promise<RuntimeStateArtifacts | null> {
@@ -1277,7 +1288,7 @@ ${overrides}\n`;
   private async resolveRuntimeStateArtifactsForOutput(
     bookDir: string,
     output: WriteChapterOutput,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): Promise<RuntimeStateArtifacts | null> {
     if (!output.runtimeStateDelta) return null;
     const safeDelta = this.normalizeRuntimeStateDeltaChapter(
@@ -1310,7 +1321,7 @@ ${overrides}\n`;
   private async appendChapterSummary(
     storyDir: string,
     summary: string,
-    language: "zh" | "en",
+    language: "zh" | "ko" | "en",
   ): Promise<void> {
     const summaryPath = join(storyDir, "chapter_summaries.md");
     let existing = "";
