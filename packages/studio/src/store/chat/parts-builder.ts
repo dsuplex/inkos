@@ -90,15 +90,15 @@ function compressionSourceSummary(sources: readonly string[] | undefined): strin
   if (!sources || sources.length === 0) return "";
   const preview = sources.slice(0, 3).join(", ");
   const suffix = sources.length > 3 ? ` +${sources.length - 3}` : "";
-  return `${tr("来源", "", "sources")} ${sources.length}: ${preview}${suffix}`;
+  return `${tr("来源", "출처", "sources")} ${sources.length}: ${preview}${suffix}`;
 }
 
 function compressionProgress(event: ContextCompressionStreamEvent): PipelineStage["progress"] | undefined {
   if (event.phase !== "start") return undefined;
   const parts = [
-    event.protectedTokens !== undefined ? `${tr("保护", "", "protected")} ${event.protectedTokens}` : "",
-    event.compressibleTokens !== undefined ? `${tr("可压缩", "", "compressible")} ${event.compressibleTokens}` : "",
-    event.budgetTokens !== undefined ? `${tr("预算", "", "budget")} ${event.budgetTokens}` : "",
+    event.protectedTokens !== undefined ? `${tr("保护", "보호", "protected")} ${event.protectedTokens}` : "",
+    event.compressibleTokens !== undefined ? `${tr("可压缩", "압축 가능", "compressible")} ${event.compressibleTokens}` : "",
+    event.budgetTokens !== undefined ? `${tr("预算", "예산", "budget")} ${event.budgetTokens}` : "",
     compressionSourceSummary(event.sources),
   ].filter(Boolean);
   return {

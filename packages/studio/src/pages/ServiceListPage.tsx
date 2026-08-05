@@ -335,10 +335,10 @@ export function ServiceListPage({ nav }: { nav: Nav }) {
           {tr("首页", "홈", "Home")}
         </button>
         <span className="text-border">/</span>
-        <span className="text-foreground">{tr("服务商管理", "", "Providers")}</span>
+        <span className="text-foreground">{tr("服务商管理", "서비스 제공자 관리", "Providers")}</span>
       </div>
 
-      <h1 className="font-serif text-2xl">{tr("服务商管理", "", "Providers")}</h1>
+      <h1 className="font-serif text-2xl">{tr("服务商管理", "서비스 제공자 관리", "Providers")}</h1>
 
       <ServiceConfigSourceCard onChange={() => { void refreshServices(); }} />
 
@@ -374,7 +374,7 @@ export function ServiceListPage({ nav }: { nav: Nav }) {
               : "border-border/60 text-muted-foreground hover:bg-secondary/50",
           ].join(" ")}
         >
-          {tr("全部", "", "All")} {bankServices.length}
+          {tr("全部", "전체", "All")} {bankServices.length}
         </button>
         {GROUP_ORDER.map((group) => {
           const selected = selectedGroups.has(group);

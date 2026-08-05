@@ -313,11 +313,11 @@ export default function FlowView({
             </span>
             <span className="flex items-center gap-1">
               <span style={{ display: "inline-block", width: 20, height: 2, background: "#f59e0b", borderRadius: 1 }} />
-              {tr("结局边", "", "Ending edge")}
+              {tr("结局边", "결말 간선", "Ending edge")}
             </span>
             <span className="flex items-center gap-1">
               <span style={{ display: "inline-block", width: 20, height: 2, background: "#8b5cf6", borderRadius: 1 }} />
-              {tr("悬停路径", "", "Hover path")}
+              {tr("悬停路径", "호버 경로", "Hover path")}
             </span>
           </span>
         </div>
