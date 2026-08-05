@@ -1,13 +1,13 @@
 export function PlayChoicePanel(props: {
   readonly choices: ReadonlyArray<string>;
   readonly disabled: boolean;
-  readonly isZh: boolean;
+  readonly lang: "zh" | "ko" | "en";
   readonly onChoose: (action: string) => void;
 }) {
   if (props.choices.length === 0) {
     return (
       <div className="px-4 py-3 text-center text-xs text-muted-foreground/60">
-        {props.disabled ? (props.isZh ? "推进中…" : "Advancing…") : (props.isZh ? "等待场景给出选项…" : "Waiting for choices…")}
+        {props.disabled ? (props.lang === "zh" ? "推进中…" : props.lang === "ko" ? "진행 중…" : "Advancing…") : (props.lang === "zh" ? "等待场景给出选项…" : props.lang === "ko" ? "장면이 옵션을 제시할 때까지 대기 중…" : "Waiting for choices…")}
       </div>
     );
   }

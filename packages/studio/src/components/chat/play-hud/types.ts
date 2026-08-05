@@ -67,6 +67,9 @@ export const SLOT_GLYPH: Record<string, string> = {
 export const KIND_LABEL_ZH: Record<string, string> = {
   item: "物件", evidence: "证据", clue: "线索", claim: "主张", proof_chain: "证据链",
 };
+export const KIND_LABEL_KO: Record<string, string> = {
+  item: "물건", evidence: "증거", clue: "단서", claim: "주장", proof_chain: "증거 연결",
+};
 export const KIND_LABEL_EN: Record<string, string> = {
   item: "Item", evidence: "Evidence", clue: "Clue", claim: "Claim", proof_chain: "Proof chain",
 };
@@ -79,7 +82,14 @@ export const LADDER_LABEL_ZH: Record<string, string> = {
   unknown: "未知", hinted: "有线索", seen: "已看见", collected: "已收集",
   verified: "已验证", weaponized: "武器化", exposed: "已揭露", exhausted: "已耗尽",
 };
+export const LADDER_LABEL_KO: Record<string, string> = {
+  unknown: "미상", hinted: "단서 있음", seen: "목격됨", collected: "수집됨",
+  verified: "검증됨", weaponized: "무기화됨", exposed: "드러남", exhausted: "고갈됨",
+};
 export const LADDER_LABEL_EN: Record<string, string> = {
   unknown: "Unknown", hinted: "Hinted", seen: "Seen", collected: "Collected",
   verified: "Verified", weaponized: "Weaponized", exposed: "Exposed", exhausted: "Exhausted",
 };
+
+export const KIND_LABELS: Record<"zh" | "ko" | "en", Record<string, string>> = { zh: KIND_LABEL_ZH, ko: KIND_LABEL_KO, en: KIND_LABEL_EN };
+export const LADDER_LABELS: Record<"zh" | "ko" | "en", Record<string, string>> = { zh: LADDER_LABEL_ZH, ko: LADDER_LABEL_KO, en: LADDER_LABEL_EN };

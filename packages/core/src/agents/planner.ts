@@ -412,9 +412,8 @@ export class PlannerAgent extends BaseAgent {
 
   private isGoldenOpeningChapter(language: string | undefined, chapterNumber: number): boolean {
     const lang = (language ?? "zh").toLowerCase();
-    const isZh = lang.startsWith("zh");
-    const isKo = lang.startsWith("ko");
-    return (isZh || isKo) ? chapterNumber <= 3 : chapterNumber <= 5;
+    const isEn = lang.startsWith("en");
+    return isEn ? chapterNumber <= 5 : chapterNumber <= 3;
   }
 
   private buildArcContext(

@@ -310,50 +310,54 @@ function proposedActionTargetRoute(action: ProposeActionParamsType["action"]): P
   return undefined;
 }
 
-function proposedActionFallbackTitle(action: ProposeActionParamsType["action"], isZh: boolean): string {
+function proposedActionFallbackTitle(action: ProposeActionParamsType["action"], lang: "zh" | "ko" | "en"): string {
   switch (action) {
     case "create_book":
-      return isZh ? "创建长篇书籍" : "Create a long-form book";
+      return lang === "zh" ? "创建长篇书籍" : lang === "ko" ? "장편 도서 생성" : "Create a long-form book";
     case "short_run":
-      return isZh ? "生成 InkOS Short" : "Generate InkOS Short";
+      return lang === "zh" ? "生成 InkOS Short" : lang === "ko" ? "InkOS Short 생성" : "Generate InkOS Short";
     case "play_start":
-      return isZh ? "启动 InkOS Play" : "Start InkOS Play";
+      return lang === "zh" ? "启动 InkOS Play" : lang === "ko" ? "InkOS Play 시작" : "Start InkOS Play";
     case "generate_cover":
-      return isZh ? "生成封面" : "Generate cover";
+      return lang === "zh" ? "生成封面" : lang === "ko" ? "표지 생성" : "Generate cover";
     case "fanfic_init":
-      return isZh ? "打开同人创作" : "Open fanfiction workflow";
+      return lang === "zh" ? "打开同人创作" : lang === "ko" ? "팬픽 워크플로우 열기" : "Open fanfiction workflow";
     case "continuation_import":
-      return isZh ? "打开续写导入" : "Open continuation import";
+      return lang === "zh" ? "打开续写导入" : lang === "ko" ? "연재 가져오기 열기" : "Open continuation import";
     case "spinoff_create":
-      return isZh ? "打开番外创作" : "Open side-story workflow";
+      return lang === "zh" ? "打开番外创作" : lang === "ko" ? "외전 워크플로우 열기" : "Open side-story workflow";
     case "style_imitation":
-      return isZh ? "打开仿写/文风分析" : "Open style imitation";
+      return lang === "zh" ? "打开仿写/文风分析" : lang === "ko" ? "문체 모방 열기" : "Open style imitation";
     case "script_create":
-      return isZh ? "创建剧本" : "Create script";
+      return lang === "zh" ? "创建剧本" : lang === "ko" ? "대본 생성" : "Create script";
     case "storyboard_create":
-      return isZh ? "创建分镜" : "Create storyboard";
+      return lang === "zh" ? "创建分镜" : lang === "ko" ? "스토리보드 생성" : "Create storyboard";
     case "interactive_film_create":
-      return isZh ? "创建互动影游" : "Create interactive film";
+      return lang === "zh" ? "创建互动影游" : lang === "ko" ? "인터랙티브 영화 생성" : "Create interactive film";
     case "translation_create":
-      return isZh ? "创建翻译项目" : "Create translation project";
+      return lang === "zh" ? "创建翻译项目" : lang === "ko" ? "번역 프로젝트 생성" : "Create translation project";
     case "draft_structure":
-      return isZh ? "生成故事结构" : "Draft story structure";
+      return lang === "zh" ? "生成故事结构" : lang === "ko" ? "스토리 구조 초안" : "Draft story structure";
     case "connect_choice":
-      return isZh ? "连接选项" : "Connect choice";
+      return lang === "zh" ? "连接选项" : lang === "ko" ? "선택지 연결" : "Connect choice";
     case "remove_node":
-return isZh ? "删除节点" : "Remove node";
+return lang === "zh" ? "删除节点" : lang === "ko" ? "노드 삭제" : "Remove node";
   }
 }
 
-function proposedActionFallbackSummary(action: ProposeActionParamsType["action"], isZh: boolean): string {
+function proposedActionFallbackSummary(action: ProposeActionParamsType["action"], lang: "zh" | "ko" | "en"): string {
   if (proposedActionTargetRoute(action)) {
-    return isZh
-      ? "确认后只会打开现有 Studio 工具，不会直接生成成品。"
+    return lang === "zh"
+      ? "确定后只会打开现有 Studio 工具，不会直接生成成品。"
+      : lang === "ko"
+      ? "확인하면 기존 Studio 도구만 열리며, 완성된 콘텐츠를 직접 생성하지 않습니다."
       : "After confirmation, InkOS will only open the existing Studio tool; it will not generate finished content directly.";
   }
-  return isZh
-    ? "确认后会切换到对应入口并执行这条需求。"
-    : "After confirmation, InkOS will switch to the matching surface and run this request.";
+  return lang === "zh"
+    ? "确定后会切换到确定到对应入口并执行这条需求。"
+    : lang === "ko"
+    ? "확인하면 해당 화면으로 전환하여 이 요청을 실행합니다."
+    : "After confirmation, InkOS will switch to the corresponding entry and run this request.";
 }
 
 function compactObject<T extends Record<string, unknown>>(value: T | undefined): T | undefined {
@@ -504,10 +508,8 @@ export function createProposeActionTool(
     async execute(_toolCallId: string, params: ProposeActionParamsType): Promise<AgentToolResult<unknown>> {
       const targetSessionKind = proposedActionSessionKind(params.action);
       const targetRoute = proposedActionTargetRoute(params.action);
-      const isZh = language === "zh";
-      const isKo = language === "ko";
-      const title = params.title?.trim() || proposedActionFallbackTitle(params.action, isZh || isKo);
-      const summary = params.summary?.trim() || proposedActionFallbackSummary(params.action, isZh || isKo);
+      const title = params.title?.trim() || proposedActionFallbackTitle(params.action, language);
+      const summary = params.summary?.trim() || proposedActionFallbackSummary(params.action, language);
       const proposedPayload = validateProposedActionPayload(proposedActionPayload(params, language));
       if (proposedPayload.error) {
         throw new Error(`Invalid proposed action payload: ${proposedPayload.error}`);
@@ -2219,11 +2221,12 @@ export function createPlayEditTool(
       if (!world) {
         return textResult(
           language === "en"
-            ? "There is no interactive world to edit yet. Start one with play_start first."
-            : "还没有可编辑的互动世界。先用 play_start 开一局。",
+          ? "There is no interactive world to edit yet. Start one with play_start first."
+          : language === "ko"
+          ? "아직 편집할 인터랙티브 세계가 없습니다. play_start로 먼저 시작하세요."
+          : "还没有可编辑的互动世界。先用 play_start 开一局。"
         );
       }
-      const isZh = (world.language ?? "zh") !== "en";
 
       const patch: Parameters<PlayStore["updateWorld"]>[1] = {};
       const nextWorldContract = mergeContract(
@@ -2253,13 +2256,15 @@ export function createPlayEditTool(
         const playerPersona = params.playerPersona?.trim();
         if (playerPersona) {
           const existingPlayer = db.getEntity("actor_player");
-          upsertPlayEditEntity(db, {
-            id: "actor_player",
-            type: "actor",
-            label: existingPlayer?.label ?? (isZh ? "玩家" : "Player"),
-            summary: playerPersona,
-            status: isZh ? "已更新" : "Updated",
-          });
+          const wLang = world.language ?? "zh";
+          const playerLabel = wLang === "zh" ? "玩家" : wLang === "ko" ? "플레이어" : "Player";
+            upsertPlayEditEntity(db, {
+              id: "actor_player",
+              type: "actor",
+              label: existingPlayer?.label ?? playerLabel,
+              summary: playerPersona,
+              status: wLang === "zh" ? "已更新" : wLang === "ko" ? "업데이트됨" : "Updated",
+            });
           updatedEntities += 1;
         }
         for (const update of params.entityUpdates ?? []) {
@@ -2275,7 +2280,7 @@ export function createPlayEditTool(
           graphEditedAt: new Date().toISOString(),
         });
         return textResult(
-          params.note?.trim() || (isZh ? "互动世界设定已更新。" : "Interactive world settings updated."),
+          params.note?.trim() || (language === "zh" ? "互动世界设定已更新。" : language === "ko" ? "인터랙티브 세계 설정이 업데이트되었습니다。" : "Interactive world settings updated."),
           {
             kind: "play_world_updated",
             worldId,
@@ -2349,10 +2354,12 @@ export function createPlayStepTool(
         // Never hand a raw tool error to the outer agent — it improvises a fake
         // "service unavailable / reload your save" message. Return a fixed, graceful
         // structured failure so the turn fails honestly and recoverably instead.
-        const isZh = (target.world?.language ?? "zh") !== "en";
+        const tLang = (target.world?.language ?? "zh") as "zh" | "ko" | "en";
         return textResult(
-          isZh
-            ? "（系统刚才卡了一下，这一步没能展开。把你刚才想做的再说一遍，我就接着推进。）"
+          tLang === "zh"
+            ? "（系统刚才卡了一下，这一步没能展开。把你刚才想做的再说一遍，我就接着往下。）"
+            : tLang === "ko"
+            ? "(시스템이 잠시 멈춰서 이 단계가 진행되지 못했습니다. 방금 하려던 것을 다시 말씀해 주시면 계속 진행하겠습니다.)"
             : "(The system hiccuped and this step didn't resolve. Say what you just did again and I'll continue.)",
           {
             kind: "play_step_failed",
@@ -2420,10 +2427,12 @@ export function createPlayReviseTool(
         return textResult(
           options.language === "en"
             ? "There is no interactive world to redo yet. Start one with play_start first."
+            : options.language === "ko"
+            ? "아직 다시 실행할 인터랙티브 세계가 없습니다. play_start로 먼저 시작하세요."
             : "还没有可重做的互动世界。先用 play_start 开一局。",
         );
       }
-      const isZh = (world.language ?? "zh") !== "en";
+      const wLang = (world.language ?? "zh") as "zh" | "ko" | "en";
       const ctx = pipeline.createAgentContext("play");
       const runner = options.runnerFactory?.({ projectRoot, worldId, runId, ctx }) ?? new PlayRunner({
         projectRoot,
@@ -2440,8 +2449,10 @@ export function createPlayReviseTool(
           const variantId = params.variantId?.trim();
           if (typeof turn !== "number" || !Number.isFinite(turn) || !variantId) {
             return textResult(
-              isZh
+              wLang === "zh"
                 ? "恢复版本需要 turn 和 variantId。"
+                : wLang === "ko"
+                ? "버전 복원에는 turn과 variantId가 필요합니다."
                 : "Restoring a variant requires both turn and variantId.",
             );
           }
@@ -2451,7 +2462,7 @@ export function createPlayReviseTool(
             variantId,
           });
           return textResult(
-            restored.sceneText || (isZh ? "已切换到指定互动回合版本。" : "Switched to the requested play turn variant."),
+            restored.sceneText || (wLang === "zh" ? "已切换到指定互动回合版本。" : wLang === "ko" ? "지정된 인터랙티브 턴 버전으로 전환했습니다." : "Switched to the requested play turn variant."),
             {
               kind: "play_variant_restored",
               worldId,
@@ -2467,8 +2478,10 @@ export function createPlayReviseTool(
         const replacement = params.action === "edit_last_input" ? params.input?.trim() : undefined;
         if (params.action === "edit_last_input" && !replacement) {
           return textResult(
-            isZh
+            wLang === "zh"
               ? "编辑上一条玩家动作需要提供新的 input。"
+              : wLang === "ko"
+              ? "이전 플레이어 액션을 수정하려면 새 input이 필요합니다."
               : "Editing the previous player action requires a new input.",
           );
         }
@@ -2477,8 +2490,10 @@ export function createPlayReviseTool(
           replay = await runner.regenerateLastTurn(replacement);
         } catch (err) {
           return textResult(
-            isZh
+            wLang === "zh"
               ? "（上一回合暂时不能安全重做。继续输入新的动作，我会从当前状态推进。）"
+              : wLang === "ko"
+              ? "(이전 턴을 안전하게 다시 실행할 수 없습니다. 새 액션을 입력해 주시면 현재 상태에서 이어서 진행하겠습니다.)"
               : "(The previous turn cannot be safely regenerated yet. Enter a new action and I will continue from the current state.)",
             {
               kind: "play_revise_failed",

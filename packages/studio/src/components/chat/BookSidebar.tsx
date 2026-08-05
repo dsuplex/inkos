@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Theme } from "../../hooks/use-theme";
 import type { TFunction } from "../../hooks/use-i18n";
+import { useI18n } from "../../hooks/use-i18n";
 import type { SSEMessage } from "../../hooks/use-sse";
 import { useChatStore } from "../../store/chat";
 import { fetchJson } from "../../hooks/use-api";
@@ -212,7 +213,7 @@ function ArtifactView({ bookId }: { readonly bookId: string }) {
 }
 
 function PanelView({ bookId, theme: _theme, t, sse }: BookSidebarProps) {
-  const isZh = t("nav.connected") === "\u5DF2\u8FDE\u63A5";
+  const lang = useI18n().lang;
 
   // Show writing indicator only during pipeline operations (write/audit/revise)
   const [activeOp, setActiveOp] = useState<string | null>(null);
@@ -235,9 +236,9 @@ function PanelView({ bookId, theme: _theme, t, sse }: BookSidebarProps) {
   }, [sse.messages]);
 
   const OP_LABELS: Record<string, string> = {
-    write: isZh ? "正在写作中..." : "Writing...",
-    audit: isZh ? "正在审计中..." : "Auditing...",
-    revise: isZh ? "正在修订中..." : "Revising...",
+    write: lang === "zh" ? "正在写作中..." : lang === "ko" ? "집필 중..." : "Writing...",
+    audit: lang === "zh" ? "正在审计中..." : lang === "ko" ? "감사 중..." : "Auditing...",
+    revise: lang === "zh" ? "正在修订中..." : lang === "ko" ? "수정 중..." : "Revising...",
   };
 
   return (
@@ -251,7 +252,7 @@ function PanelView({ bookId, theme: _theme, t, sse }: BookSidebarProps) {
         </div>
       )}
       <ProgressSection sse={sse} />
-      <ChaptersSection bookId={bookId} isZh={isZh} />
+      <ChaptersSection bookId={bookId} lang={lang} />
       <CharacterSection bookId={bookId} />
       <FoundationSection bookId={bookId} />
       <SummarySection bookId={bookId} />

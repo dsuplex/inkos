@@ -319,13 +319,13 @@ export function buildView(run: PlayRunResponse | null): HudView | null {
 export function PlayHud(props: {
   readonly sessionId: string;
   readonly isStreaming: boolean;
-  readonly isZh: boolean;
+  readonly lang: "zh" | "ko" | "en";
   readonly open: boolean;
   readonly onClose: () => void;
   readonly sessionTitle?: string | null;
   readonly imageSettings?: PlayImageSettings;
 }) {
-  const { sessionId, isStreaming, isZh, open, onClose } = props;
+  const { sessionId, isStreaming, lang, open, onClose } = props;
   const base = `/play/runs/${encodeURIComponent(sessionId)}/main`;
   const [selectedHoldingId, setSelectedHoldingId] = useState<string | null>(null);
   const [selectedFacingId, setSelectedFacingId] = useState<string | null>(null);
@@ -407,7 +407,7 @@ export function PlayHud(props: {
       .forEach((request) => void generate(request.key, request.body));
   }, [coverReady, effectiveImageSettings, view, run?.sceneImageUrl, generate]);
 
-  const title = props.sessionTitle?.trim() || run?.title?.trim() || (isZh ? "互动世界" : "Play World");
+  const title = props.sessionTitle?.trim() || run?.title?.trim() || (lang === "zh" ? "互动世界" : lang === "ko" ? "인터랙티브 세계" : "Play World");
 
   // Collapsed: render nothing (the chat input row owns the prominent toggle).
   // Hooks above still run, so the run keeps polling and reporting the scene image.
@@ -420,7 +420,7 @@ export function PlayHud(props: {
         {view?.turn != null ? (
           <div className="flex shrink-0 flex-col items-center leading-none">
             <span className="text-[24px] leading-6 font-extrabold text-primary">{view.turn}</span>
-            <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground/60">{isZh ? "幕" : "Turn"}</span>
+            <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground/60">{lang === "zh" ? "막" : lang === "ko" ? "막" : "Turn"}</span>
           </div>
         ) : (
           <Gamepad2 size={16} className="shrink-0 text-primary" />
@@ -429,10 +429,10 @@ export function PlayHud(props: {
           <div className="truncate text-[16px] leading-6 font-bold text-foreground">{title}</div>
           <div className="mt-0.5 text-[14px] leading-5 text-muted-foreground">
             {view?.turn == null
-              ? (isZh ? "尚未开始" : "Not started")
+              ? (lang === "zh" ? "아직 시작 안 됨" : lang === "ko" ? "아직 시작 안 됨" : "Not started")
               : view?.mode
-                ? (view.mode === "guided" ? (isZh ? "互动模式" : "Guided") : (isZh ? "开放模式" : "Open"))
-                : (isZh ? "互动世界" : "Play World")}
+                ? (view.mode === "guided" ? (lang === "zh" ? "인터랙티브 모드" : lang === "ko" ? "인터랙티브 모드" : "Guided") : (lang === "zh" ? "开放模式" : lang === "ko" ? "오픈 모드" : "Open"))
+                : (lang === "zh" ? "인터랙티브 세계" : lang === "ko" ? "인터랙티브 세계" : "Play World")}
           </div>
         </div>
         {view?.time?.value ? (
@@ -440,7 +440,7 @@ export function PlayHud(props: {
             {view.time.value}
           </span>
         ) : null}
-        <button type="button" onClick={() => { onClose(); setSelectedHoldingId(null); setSelectedFacingId(null); }} className="shrink-0 text-muted-foreground hover:text-foreground" title={isZh ? "收起" : "Collapse"}>
+        <button type="button" onClick={() => { onClose(); setSelectedHoldingId(null); setSelectedFacingId(null); }} className="shrink-0 text-muted-foreground hover:text-foreground" title={lang === "zh" ? "收起" : lang === "ko" ? "접기" : "Collapse"}>
           <X size={15} />
         </button>
       </header>
@@ -449,9 +449,9 @@ export function PlayHud(props: {
         {!view ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border/50 bg-secondary/10 px-4 py-8 text-center">
             <span className="text-3xl opacity-80">🎲</span>
-            <p className="text-[16px] leading-6 font-semibold text-foreground">{isZh ? "这个世界还在沉睡" : "This world is still asleep"}</p>
+            <p className="text-[16px] leading-6 font-semibold text-foreground">{lang === "zh" ? "这个世界还在沉睡" : lang === "ko" ? "이 세계는 아직 잠들어 있습니다" : "This world is still asleep"}</p>
             <p className="text-[14px] leading-6 text-muted-foreground">
-              {isZh
+              {lang
                 ? "在左边写下你的第一个动作，人物、线索、状态会在这里逐渐点亮。"
                 : "Take your first action on the left — characters, clues, and state will light up here."}
             </p>
@@ -459,39 +459,39 @@ export function PlayHud(props: {
         ) : selectedHolding ? (
           <HoldingInspect
             row={selectedHolding}
-            isZh={isZh}
+            lang={lang}
             generating={generating.has(selectedHolding.id)}
             onBack={() => setSelectedHoldingId(null)}
           />
         ) : selectedFacing ? (
           <HudRowInspect
             row={selectedFacing}
-            isZh={isZh}
+            lang={lang}
             onBack={() => setSelectedFacingId(null)}
           />
         ) : (
           <>
             {view.time && (view.time.note || view.time.details.length > 0) ? (
               <Zone
-                title={isZh ? "世界时间" : "World time"}
+                title={lang === "zh" ? "世界时间" : lang === "ko" ? "세계 시간" : "World time"}
                 icon="⏳"
                 empty={false}
                 emptyText=""
               >
-                <Row row={view.time} isZh={isZh} />
+                <Row row={view.time} lang={lang} />
               </Zone>
             ) : null}
             <Zone
-              title={isZh ? "我面对的" : "Around me"}
+              title={lang === "zh" ? "我面对的" : lang === "ko" ? "주변" : "Around me"}
               icon="🧭"
               empty={view.facing.length === 0}
-              emptyText={isZh ? "周围还没有出现地点或人物" : "No places or people around yet"}
+              emptyText={lang === "zh" ? "周围还没有出现地点或人物" : lang === "ko" ? "주변에 장소나 인물이 아직 없습니다" : "No places or people around yet"}
             >
               {view.facing.map((row) => (
                 <Row
                   key={row.id}
                   row={row}
-                  isZh={isZh}
+                  lang={lang}
                   generating={generating.has(row.id)}
                   onOpenVisual={row.imageUrl ? () => { setSelectedHoldingId(null); setSelectedFacingId(row.id); } : undefined}
                 />
@@ -499,16 +499,16 @@ export function PlayHud(props: {
             </Zone>
 
             <Zone
-              title={isZh ? "我握有的" : "What I hold"}
+              title={lang === "zh" ? "我握有的" : lang === "ko" ? "소지품" : "What I hold"}
               icon="🎒"
               empty={view.holdings.length === 0}
-              emptyText={isZh ? "还没有获得物品、证据或线索" : "No items, evidence, or clues yet"}
+              emptyText={lang === "zh" ? "还没有获得物品、证据或线索" : lang === "ko" ? "아직 아이템, 증거, 단서가 없습니다" : "No items, evidence, or clues yet"}
             >
               {view.holdings.map((row) => (
                 <HoldingSlot
                   key={row.id}
                   row={row}
-                  isZh={isZh}
+                  lang={lang}
                   generating={generating.has(row.id)}
                   onOpen={() => { setSelectedFacingId(null); setSelectedHoldingId(row.id); }}
                 />
@@ -516,10 +516,10 @@ export function PlayHud(props: {
             </Zone>
 
             <Zone
-              title={isZh ? "状态" : "State"}
+              title={lang === "zh" ? "状态" : lang === "ko" ? "상태" : "State"}
               icon="📊"
               empty={view.meters.length === 0}
-              emptyText={isZh ? "还没有出现数值（压力、资源、关系、倒计时等）" : "No meters yet (pressure, resources, relations, timers…)"}
+              emptyText={lang === "zh" ? "还没有出现数值（压力、资源、关系、倒计时等）" : lang === "ko" ? "아직 수치가 없습니다 (압박, 자원, 관계, 타이머 등)" : "No meters yet (pressure, resources, relations, timers…)"}
             >
               {view.meters.map((row) => (
                 <StateGauge key={row.id} row={row} />
@@ -567,14 +567,14 @@ function Zone(props: {
 
 function HudRowInspect(props: {
   readonly row: HudRow;
-  readonly isZh: boolean;
+  readonly lang: "zh" | "ko" | "en";
   readonly onBack: () => void;
 }) {
-  const { row, isZh, onBack } = props;
+  const { row, lang, onBack } = props;
   return (
     <div className="min-w-0 space-y-3">
       <button type="button" onClick={onBack} className="flex items-center gap-1 text-[14px] leading-6 text-muted-foreground hover:text-foreground">
-        <ChevronLeft size={14} /> {isZh ? "返回" : "Back"}
+        <ChevronLeft size={14} /> {lang === "zh" ? "返回" : lang === "ko" ? "뒤로" : "Back"}
       </button>
 
       <div className="min-w-0 overflow-hidden rounded-xl border border-border/40 bg-secondary/30">
@@ -613,12 +613,12 @@ function HudRowInspect(props: {
 
 function Row({
   row,
-  isZh,
+  lang,
   generating,
   onOpenVisual,
 }: {
   readonly row: HudRow;
-  readonly isZh: boolean;
+  readonly lang: "zh" | "ko" | "en";
   readonly generating?: boolean;
   readonly onOpenVisual?: () => void;
 }) {
@@ -631,7 +631,7 @@ function Row({
     <div className="min-w-0 rounded-lg border border-border/30 bg-secondary/30">
       <div
         role={interactive ? "button" : undefined}
-        aria-label={interactive ? `${row.label} ${opensVisual ? (isZh ? "查看大图" : "view image") : open ? (isZh ? "收起详情" : "collapse details") : (isZh ? "展开详情" : "show details")}` : undefined}
+        aria-label={interactive ? `${row.label} ${opensVisual ? (lang === "zh" ? "查看大图" : lang === "ko" ? "이미지 보기" : "view image") : open ? (lang === "zh" ? "收起详情" : lang === "ko" ? "세부 접기" : "collapse details") : (lang === "zh" ? "展开详情" : lang === "ko" ? "세부 표시" : "show details")}` : undefined}
         onClick={opensVisual ? onOpenVisual : expandable ? () => setOpen((o) => !o) : undefined}
         className={`px-2.5 py-2 ${interactive ? "cursor-pointer" : ""}`}
       >

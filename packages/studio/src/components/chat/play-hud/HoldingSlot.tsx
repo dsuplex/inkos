@@ -1,15 +1,17 @@
 import { ChevronRight } from "lucide-react";
 import type { HoldingRow } from "./types";
-import { KIND_LABEL_ZH, KIND_LABEL_EN } from "./types";
+import { KIND_LABEL_ZH, KIND_LABEL_KO, KIND_LABEL_EN } from "./types";
+
+const KIND_LABELS: Record<"zh" | "ko" | "en", Record<string, string>> = { zh: KIND_LABEL_ZH, ko: KIND_LABEL_KO, en: KIND_LABEL_EN };
 
 export function HoldingSlot(props: {
   readonly row: HoldingRow;
-  readonly isZh: boolean;
+  readonly lang: "zh" | "ko" | "en";
   readonly generating?: boolean;
   readonly onOpen: () => void;
 }) {
-  const { row, isZh, generating, onOpen } = props;
-  const kind = (isZh ? KIND_LABEL_ZH : KIND_LABEL_EN)[row.kind] ?? row.kind;
+  const { row, lang, generating, onOpen } = props;
+  const kind = KIND_LABELS[lang][row.kind] ?? row.kind;
   return (
     <button
       type="button"
@@ -20,7 +22,7 @@ export function HoldingSlot(props: {
         <img src={row.imageUrl} alt="" aria-hidden="true" className="h-8 w-8 shrink-0 rounded object-cover" />
       ) : (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-secondary/60 text-sm">
-          {generating ? "⏳" : row.glyph}
+          {generating ? "?" : row.glyph}
         </span>
       )}
       <span className="min-w-0 flex-1">
@@ -28,7 +30,7 @@ export function HoldingSlot(props: {
           <span className="truncate text-[15px] leading-6 font-semibold text-foreground">{row.label}</span>
           {row.isFresh ? (
             <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 text-[12px] leading-5 font-medium text-emerald-300">
-              {isZh ? "新" : "NEW"}
+              {lang === "zh" ? "新" : lang === "ko" ? "신규" : "NEW"}
             </span>
           ) : null}
         </span>

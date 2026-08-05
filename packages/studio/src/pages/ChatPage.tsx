@@ -1,6 +1,7 @@
 import { memo, useRef, useEffect, useMemo, useState } from "react";
 import type { Theme } from "../hooks/use-theme";
 import type { TFunction } from "../hooks/use-i18n";
+import { useI18n } from "../hooks/use-i18n";
 import type { SSEMessage } from "../hooks/use-sse";
 import { fetchJson, postApi, useApi } from "../hooks/use-api";
 import type { ChatAttachmentPayload, MessagePart } from "../store/chat/types";
@@ -258,7 +259,7 @@ const AssistantMessageParts = memo(function AssistantMessageParts({
 });
 
 function SkillPickerPanel({
-  isZh,
+  lang,
   skills,
   diagnostics,
   selectedSkillIds,
@@ -269,7 +270,7 @@ function SkillPickerPanel({
   onToggleSkill,
   onImport,
 }: {
-  readonly isZh: boolean;
+  readonly lang: "zh" | "ko" | "en";
   readonly skills: ReadonlyArray<StudioSkill>;
   readonly diagnostics?: ReadonlyArray<{ readonly path?: string; readonly message?: string }>;
   readonly selectedSkillIds: ReadonlyArray<string>;
@@ -288,11 +289,9 @@ function SkillPickerPanel({
       <div className="border-b border-border/40 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-bold">{isZh ? "选择 Agent Skill" : "Select Agent Skills"}</div>
+            <div className="text-sm font-bold">{lang === "zh" ? "选择 Agent Skill" : lang === "ko" ? "Agent Skill 선택" : "Select Agent Skills"}</div>
             <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-              {isZh
-                ? "Agent 会按当前意图自主调用；点选 Skill 可强制它随下一条消息启用。"
-                : "The agent can choose a skill from your intent; selecting one forces it for the next message."}
+              {lang === "zh" ? "Agent 会按当前意图自主调用；点选 Skill 可强制它随下一条消息启用。" : lang === "ko" ? "에이전트가 현재 의도에 따라 Skill을 자동으로 호출합니다. Skill을 선택하면 다음 메시지에서 강제로 활성화됩니다." : "The agent can choose a skill from your intent; selecting one forces it for the next message."}
             </p>
           </div>
           <div className="flex shrink-0 items-center">
@@ -303,7 +302,7 @@ function SkillPickerPanel({
               className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-40"
             >
               <FolderUp size={13} />
-              {isZh ? "导入" : "Import"}
+              {lang === "zh" ? "导入" : lang === "ko" ? "가져오기" : "Import"}
             </button>
             <input
               ref={folderInputRef}
@@ -323,20 +322,20 @@ function SkillPickerPanel({
         {createError ? <div className="mb-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{createError}</div> : null}
         {diagnostics?.length ? (
           <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-            <div className="font-semibold">{isZh ? "部分外部 Skill 未加载" : "Some external skills were not loaded"}</div>
+            <div className="font-semibold">{lang === "zh" ? "部分外部 Skill 未加载" : lang === "ko" ? "일부 외부 Skill을 불러오지 못했습니다" : "Some external skills were not loaded"}</div>
             {diagnostics.slice(0, 4).map((item, index) => (
               <div key={`${item.path ?? "skill"}-${index}`} className="mt-1 break-all">
-                {item.path ? `${item.path}: ` : ""}{item.message ?? (isZh ? "格式无效" : "Invalid format")}
+                {item.path ? `${item.path}: ` : ""}{item.message ?? (lang === "zh" ? "格式无效" : lang === "ko" ? "형식이 잘못되었습니다" : "Invalid format")}
               </div>
             ))}
           </div>
         ) : null}
         {loading ? (
-          <div className="px-2 py-6 text-center text-sm text-muted-foreground">{isZh ? "加载 Skill..." : "Loading skills..."}</div>
+          <div className="px-2 py-6 text-center text-sm text-muted-foreground">{lang === "zh" ? "加载 Skill..." : lang === "ko" ? "Skill 로딩 중..." : "Loading skills..."}</div>
         ) : error ? (
           <div className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
         ) : skills.length === 0 ? (
-          <div className="px-2 py-6 text-center text-sm text-muted-foreground">{isZh ? "还没有可用 Skill。" : "No skills available yet."}</div>
+          <div className="px-2 py-6 text-center text-sm text-muted-foreground">{lang === "zh" ? "还没有可用 Skill。" : lang === "ko" ? "사용 가능한 Skill이 없습니다" : "No skills available yet."}</div>
         ) : (
           <div className="grid gap-2 md:grid-cols-2">
             {skills.map((skill) => {
@@ -377,6 +376,7 @@ function SkillPickerPanel({
 // -- Component --
 
 export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-create", nav, theme, t, sse: _sse }: ChatPageProps) {
+  const { lang } = useI18n();
   // -- Store selectors --
   const messages = useChatStore(chatSelectors.activeMessages);
   const activeSession = useChatStore(chatSelectors.activeSession);
@@ -406,7 +406,6 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoScrollPinnedRef = useRef(true);
 
-  const isZh = t("nav.connected") === "\u5DF2\u8FDE\u63A5";
   const hasBook = Boolean(activeBookId);
   const currentSessionKind: ChatSessionKind = activeSession?.sessionKind
     ?? (mode === "interactive-film-authoring" ? "interactive-film-authoring"
@@ -521,12 +520,12 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
   }, [services, modelsByService]);
 
   const selectedModelLabel = useMemo(() => {
-    if (!selectedModel) return isZh ? "选择模型" : "Select model";
+    if (!selectedModel) return lang === "zh" ? "选择模型" : lang === "ko" ? "모델 선택" : "Select model";
     const group = groupedModels.find((item) => item.service === selectedService);
     const model = group?.models.find((item) => item.id === selectedModel);
     const modelLabel = model?.name ?? selectedModel;
     return group ? `${group.label} · ${modelLabel}` : modelLabel;
-  }, [groupedModels, selectedModel, selectedService, isZh]);
+  }, [groupedModels, selectedModel, selectedService, lang]);
 
   // Auto-select from saved service config first, then fall back to the first available model.
   useEffect(() => {
@@ -671,7 +670,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
     }
     setAttachedFiles((prev) => [...prev, ...accepted].slice(0, MAX_CHAT_ATTACHMENTS));
     setAttachmentError(rejected.length > 0
-      ? (isZh ? `以下文件过大，未添加：${rejected.join("、")}` : `Some files were too large: ${rejected.join(", ")}`)
+      ? (lang === "zh" ? `以下文件过大，未添加：${rejected.join("、")}` : lang === "ko" ? `다음 파일이 너무 커서 추가되지 않았습니다: ${rejected.join(", ")}` : `Some files were too large: ${rejected.join(", ")}`)
       : null);
   };
 
@@ -778,8 +777,10 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
     markProposalResolved(details.execId, "rejected");
     if (!activeSessionId) return;
     autoScrollPinnedRef.current = true;
-    const rejectionText = isZh
+    const rejectionText = lang === "zh"
       ? `取消这次操作：${details.title ?? details.instruction}`
+      : lang === "ko"
+      ? `이 작업을 취소합니다: ${details.title ?? details.instruction}`
       : `Cancel this action: ${details.title ?? details.instruction}`;
     await sendMessage(activeSessionId, rejectionText, {
       activeBookId,
@@ -793,7 +794,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
     autoScrollPinnedRef.current = true;
     await sendMessage(
       activeSessionId,
-      buildNarrativeForecastSelectionInstruction(forecastId, branchId, isZh ? "zh" : "en"),
+      buildNarrativeForecastSelectionInstruction(forecastId, branchId, lang),
       {
         activeBookId,
         sessionKind: "book",
@@ -807,7 +808,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
     autoScrollPinnedRef.current = true;
     await sendMessage(
       activeSessionId,
-      buildNarrativeForecastRecheckInstruction(forecastId, isZh ? "zh" : "en"),
+      buildNarrativeForecastRecheckInstruction(forecastId, lang),
       {
         activeBookId,
         sessionKind: "book",
@@ -861,18 +862,12 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
 
   const emptyGuidance = (() => {
     if (currentSessionKind === "short") {
-      return isZh
-        ? "说一个短篇方向、标题灵感、人物压力或核心冲突，我会走 InkOS Short 生成正文、简介和封面。"
-        : "Describe a short-fiction direction, title hook, pressure, or core conflict to run InkOS Short.";
+      return lang === "zh" ? "说一个短篇方向、标题灵感、人物压力或核心冲突，我会走 InkOS Short 生成正文、简介和封面。" : lang === "ko" ? "단편 방향, 제목 힌트, 인물의 압박 또는 핵심 갈등을 말씀해 주시면 InkOS Short가 본문, 줄거리, 표지를 생성합니다." : "Describe a short-fiction direction, title hook, pressure, or core conflict to run InkOS Short.";
     }
     if (currentSessionKind === "play") {
-      return isZh
-        ? "说一个可玩的世界、角色处境或开场动作，我会启动互动世界；之后你可以自由行动或点建议动作。"
-        : "Describe a playable world, character situation, or opening action to start an interactive world.";
+      return lang === "zh" ? "说一个可玩的世界、角色处境或开场动作，我会启动互动世界；之后你可以自由行动或点建议动作。" : lang === "ko" ? "플레이할 세계, 캐릭터 상황 또는 오프닝 액션을 말씀해 주시면 인터랙티브 세계를 시작하겠습니다; 그 이후에는 자유롭게 행동하거나 제안 액션을 선택할 수 있습니다." : "Describe a playable world, character situation, or opening action to start an interactive world.";
     }
-    return isZh
-      ? "\u544A\u8BC9\u6211\u4F60\u60F3\u5199\u4EC0\u4E48\u2014\u2014\u9898\u6750\u3001\u4E16\u754C\u89C2\u3001\u4E3B\u89D2\u3001\u6838\u5FC3\u51B2\u7A81"
-      : "Tell me what you want to write \u2014 genre, world, protagonist, core conflict";
+    return lang === "zh" ? "\u544A\u8BC9\u6211\u4F60\u60F3\u5199\u4EC0\u4E48\u2014\u2014\u9898\u6750\u3001\u4E16\u754C\u89C2\u3001\u4E3B\u89D2\u3001\u6838\u5FC3\u51B2\u7A81" : lang === "ko" ? "쓰고 싶은 것을 말씀해 주세요 — 장르, 세계관, 주인공, 핵심 갈등" : "Tell me what you want to write \u2014 genre, world, protagonist, core conflict";
   })();
 
   return (
@@ -896,7 +891,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
               <Gamepad2 size={24} className="text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground/70 max-w-md leading-7">
-              {isZh ? "选个玩法，进去再聊你想玩的世界。" : "Pick a playstyle, then describe the world you want in chat."}
+              {lang === "zh" ? "选个玩法，进去再聊你想玩的世界。" : lang === "ko" ? "플레이 스타일을 선택하고, 채팅에서 원하는 세계를 설명하세요" : "Pick a playstyle, then describe the world you want in chat."}
             </p>
             <div className="flex gap-3">
               <button
@@ -904,16 +899,16 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                 onClick={() => { if (activeSessionId) setSessionPlayMode(activeSessionId, "guided"); }}
                 className="w-40 rounded-xl border border-border/50 bg-secondary/30 px-4 py-3 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
               >
-                <div className="text-sm font-medium text-foreground">{isZh ? "点着玩" : "Choices"}</div>
-                <div className="mt-1 text-xs leading-5 text-muted-foreground">{isZh ? "GM 给选项，点着推进" : "Pick from offered actions"}</div>
+                <div className="text-sm font-medium text-foreground">{lang === "zh" ? "点着玩" : lang === "ko" ? "선택형" : "Choices"}</div>
+                <div className="mt-1 text-xs leading-5 text-muted-foreground">{lang === "zh" ? "GM 给选项，点着推进" : lang === "ko" ? "GM이 선택지를 주고 클릭으로 진행" : "Pick from offered actions"}</div>
               </button>
               <button
                 type="button"
                 onClick={() => { if (activeSessionId) setSessionPlayMode(activeSessionId, "open"); }}
                 className="w-40 rounded-xl border border-border/50 bg-secondary/30 px-4 py-3 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
               >
-                <div className="text-sm font-medium text-foreground">{isZh ? "自由玩" : "Free"}</div>
-                <div className="mt-1 text-xs leading-5 text-muted-foreground">{isZh ? "自己打字，想干嘛干嘛" : "Type anything you want"}</div>
+                <div className="text-sm font-medium text-foreground">{lang === "zh" ? "自由玩" : lang === "ko" ? "자유형" : "Free"}</div>
+                <div className="mt-1 text-xs leading-5 text-muted-foreground">{lang === "zh" ? "自己打字，想干嘛干嘛" : lang === "ko" ? "직접 입력하여 자유롭게 플레이" : "Type anything you want"}</div>
               </button>
             </div>
           </div>
@@ -1017,7 +1012,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
               <Message from="assistant">
                 <MessageContent>
                   <Shimmer className="text-sm" duration={1.5}>
-                    {isZh ? "思考中..." : "Thinking..."}
+                    {lang === "zh" ? "思考中..." : lang === "ko" ? "생각 중..." : "Thinking..."}
                   </Shimmer>
                 </MessageContent>
               </Message>
@@ -1034,7 +1029,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
             <QuickActions
               onAction={handleQuickAction}
               disabled={loading || !activeSessionId}
-              isZh={isZh}
+              lang={lang}
             />
           </div>
         </div>
@@ -1048,7 +1043,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
           <PlayChoicePanel
             choices={playChoices}
             disabled={loading || !activeSessionId}
-            isZh={isZh}
+            lang={lang}
             onChoose={(action) => {
               if (!activeSessionId || !playChoiceSet) return;
               setConsumedPlayChoiceKey(playChoiceSet.key);
@@ -1072,7 +1067,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
               className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/30 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
             >
               <RotateCcw size={14} />
-              {isZh ? "重试上一条消息" : "Retry last message"}
+              {lang === "zh" ? "重试上一条消息" : lang === "ko" ? "마지막 메시지 재시도" : "Retry last message"}
             </button>
           </div>
         </div>
@@ -1084,7 +1079,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
             <div className="relative flex-1 rounded-xl bg-secondary/30 transition-all">
               {skillPanelOpen ? (
                 <SkillPickerPanel
-                  isZh={isZh}
+                  lang={lang}
                   skills={availableSkills}
                   diagnostics={skillsData?.diagnostics}
                   selectedSkillIds={selectedSkillIds}
@@ -1119,7 +1114,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                         type="button"
                         onClick={() => setSelectedSkillIds((prev) => prev.filter((id) => id !== skill.id))}
                         className="rounded-full p-0.5 hover:bg-primary/20"
-                        aria-label={isZh ? `移除 ${skill.name}` : `Remove ${skill.name}`}
+                        aria-label={lang === "zh" ? `移除 ${skill.name}` : lang === "ko" ? `${skill.name} 제거` : `Remove ${skill.name}`}
                       >
                         <X size={12} />
                       </button>
@@ -1143,7 +1138,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                             type="button"
                             onClick={() => setAttachedFiles((prev) => prev.filter((item) => item !== file))}
                             className="rounded-full p-0.5 hover:bg-muted"
-                            aria-label={isZh ? `移除 ${file.name}` : `Remove ${file.name}`}
+                            aria-label={lang === "zh" ? `移除 ${file.name}` : lang === "ko" ? `${file.name} 제거` : `Remove ${file.name}`}
                           >
                             <X size={12} />
                           </button>
@@ -1162,8 +1157,8 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                   onClick={() => setSkillPanelOpen((value) => !value)}
                   disabled={loading || !activeSessionId}
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 transition-colors disabled:opacity-30 ${skillPanelOpen || selectedSkillIds.length > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:border-primary/40 hover:text-primary"}`}
-                  title={isZh ? "添加 Skill" : "Add skill"}
-                  aria-label={isZh ? "添加 Skill" : "Add skill"}
+                  title={lang === "zh" ? "添加 Skill" : lang === "ko" ? "Skill 추가" : "Add skill"}
+                  aria-label={lang === "zh" ? "添加 Skill" : lang === "ko" ? "Skill 추가" : "Add skill"}
                 >
                   <Plus size={16} strokeWidth={2.4} />
                 </button>
@@ -1172,8 +1167,8 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                   onClick={() => fileInputRef.current?.click()}
                   disabled={!activeSessionId}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-30"
-                  title={isZh ? "上传图片或资料" : "Attach files"}
-                  aria-label={isZh ? "上传图片或资料" : "Attach files"}
+                  title={lang === "zh" ? "上传图片或资料" : lang === "ko" ? "파일 첨부" : "Attach files"}
+                  aria-label={lang === "zh" ? "上传图片或资料" : lang === "ko" ? "파일 첨부" : "Attach files"}
                 >
                   <Paperclip size={16} strokeWidth={2.3} />
                 </button>
@@ -1182,7 +1177,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void onSend(input); } }}
-                  placeholder={isZh ? "输入指令..." : "Enter command..."}
+                  placeholder={lang === "zh" ? "输入指令..." : lang === "ko" ? "명령 입력..." : "Enter command..."}
                   disabled={!activeSessionId}
                   rows={1}
                   className="flex-1 bg-transparent text-base leading-7 placeholder:text-muted-foreground/50 outline-none! border-none! ring-0! shadow-none focus:outline-none! focus:ring-0! focus:border-none! resize-none disabled:opacity-50 max-h-[200px] overflow-y-auto"
@@ -1192,7 +1187,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                   onClick={() => void onSend(input)}
                   disabled={(!input.trim() && attachedFiles.length === 0 && !loading) || !activeSessionId}
                   className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 shadow-sm shadow-primary/20"
-                  title={loading && !input.trim() && attachedFiles.length === 0 ? (isZh ? "停止当前回复" : "Stop") : undefined}
+                  title={loading && !input.trim() && attachedFiles.length === 0 ? (lang === "zh" ? "停止当前回复" : lang === "ko" ? "현재 응답 중지" : "Stop") : undefined}
                 >
                   {loading && !input.trim() && attachedFiles.length === 0
                     ? <Square size={13} fill="currentColor" />
@@ -1201,7 +1196,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
               </div>
               <div className="flex items-center gap-2 px-3 pb-2 border-t border-border/20 pt-1.5">
                 {modelPickerStatus === "loading" ? (
-                  <span className="text-[15px] text-muted-foreground/40 animate-pulse">{isZh ? "加载模型..." : "Loading models..."}</span>
+                  <span className="text-[15px] text-muted-foreground/40 animate-pulse">{lang === "zh" ? "加载模型..." : lang === "ko" ? "모델 로딩 중..." : "Loading models..."}</span>
                 ) : modelPickerStatus === "ready" ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-muted text-[16px] transition-colors cursor-pointer">
@@ -1223,7 +1218,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                     onClick={() => nav.toServices()}
                     className="text-[15px] text-muted-foreground/50 hover:text-primary transition-colors"
                   >
-                    {isZh ? "配置模型 →" : "Set up models →"}
+                    {lang === "zh" ? "配置模型 →" : lang === "ko" ? "모델 설정 →" : "Set up models →"}
                   </button>
                 )}
                 {currentSessionKind === "play" && (
@@ -1231,10 +1226,10 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                     type="button"
                     onClick={() => setWorldPanelOpen((v) => !v)}
                     className={`ml-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[16px] font-medium transition-colors ${worldPanelOpen ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted hover:text-primary"}`}
-                    title={isZh ? "查看世界：持有 / 状态 / 关系" : "View world: holdings / state / relations"}
+                    title={lang === "zh" ? "查看世界：持有 / 状态 / 关系" : lang === "ko" ? "세계 보기: 보유 / 상태 / 관계" : "View world: holdings / state / relations"}
                   >
                     <Gamepad2 size={18} />
-                    {isZh ? "查看世界" : "View World"}
+                    {lang === "zh" ? "查看世界" : lang === "ko" ? "세계 보기" : "View World"}
                   </button>
                 )}
               </div>
@@ -1245,22 +1240,22 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                   type="button"
                   onClick={() => setPlayImageMenuOpen((value) => !value)}
                   disabled={loading || !activeSessionId}
-                  title={isZh ? "自动配图" : "Auto illustration"}
+                  title={lang === "zh" ? "自动配图" : lang === "ko" ? "자동 일러스트" : "Auto illustration"}
                   className={`flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 bg-secondary/40 shadow-sm transition-all hover:border-primary/50 hover:bg-primary/10 hover:text-primary active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 ${playImageMenuOpen || playImageSettings.actors || playImageSettings.moments || playImageSettings.inventory ? "text-primary" : "text-muted-foreground"}`}
-                  aria-label={isZh ? "自动配图" : "Auto illustration"}
+                  aria-label={lang === "zh" ? "自动配图" : lang === "ko" ? "자동 일러스트" : "Auto illustration"}
                 >
                   <Palette size={17} />
                 </button>
                 {playImageMenuOpen ? (
                   <div className="absolute bottom-12 right-0 z-30 w-44 rounded-xl border border-border/50 bg-card/95 p-2 shadow-xl backdrop-blur">
                     <div className="mb-1.5 px-1 text-[12px] leading-5 font-semibold uppercase tracking-wider text-muted-foreground/60">
-                      {isZh ? "自动配图" : "Auto illustration"}
+                      {lang === "zh" ? "自动配图" : lang === "ko" ? "자동 일러스트" : "Auto illustration"}
                     </div>
                     {(["actors", "moments", "inventory"] as const).map((key) => (
                       <label
                         key={key}
                         className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] leading-6 ${playImageCoverReady ? "cursor-pointer text-foreground hover:bg-secondary/50" : "cursor-not-allowed text-muted-foreground/40"}`}
-                        title={playImageCoverReady ? undefined : (isZh ? "先在「模型配置」里配好生图 API 才能开启" : "Configure an image API in Model Settings first")}
+                        title={playImageCoverReady ? undefined : (lang === "zh" ? "先在「模型配置」里配好生图 API 才能开启" : lang === "ko" ? "모델 설정에서 이미지 API를 먼저 구성해야 합니다" : "Configure an image API in Model Settings first")}
                       >
                         <input
                           type="checkbox"
@@ -1270,15 +1265,15 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
                           className="h-4 w-4 accent-primary"
                         />
                         {key === "actors"
-                          ? (isZh ? "为角色配图" : "Characters")
+                          ? (lang === "zh" ? "为角色配图" : lang === "ko" ? "캐릭터" : "Characters")
                           : key === "moments"
-                            ? (isZh ? "为时刻配图" : "Moments")
-                            : (isZh ? "为背包配图" : "Inventory")}
+                            ? (lang === "zh" ? "为时刻配图" : lang === "ko" ? "순간" : "Moments")
+                            : (lang === "zh" ? "为背包配图" : lang === "ko" ? "인벤토리" : "Inventory")}
                       </label>
                     ))}
                     {!playImageCoverReady ? (
                       <p className="mt-1 px-1 text-[12px] leading-5 text-muted-foreground/50">
-                        {isZh ? "未检测到生图 API。" : "No image API configured."}
+                        {lang === "zh" ? "未检测到生图 API。" : lang === "ko" ? "이미지 API가 감지되지 않았습니다" : "No image API configured."}
                       </p>
                     ) : null}
                   </div>
@@ -1288,7 +1283,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
           </div>
           {playImageError ? (
             <p className="mt-2 text-right text-[13px] leading-5 text-destructive/80">
-              {isZh ? `配图失败：${playImageError}` : `Image failed: ${playImageError}`}
+              {lang === "zh" ? `配图失败：${playImageError}` : lang === "ko" ? `이미지 실패: ${playImageError}` : `Image failed: ${playImageError}`}
             </p>
           ) : null}
         </div>
@@ -1299,7 +1294,7 @@ export function ChatPage({ activeBookId, mode = activeBookId ? "book" : "book-cr
         <PlayHud
           sessionId={activeSessionId}
           isStreaming={loading}
-          isZh={isZh}
+          lang={lang}
           open={worldPanelOpen}
           onClose={() => setWorldPanelOpen(false)}
           imageSettings={playImageSettings}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Theme } from "../hooks/use-theme";
 import type { TFunction } from "../hooks/use-i18n";
+import { useI18n } from "../hooks/use-i18n";
 import { useColors } from "../hooks/use-colors";
 import { fetchJson, useApi } from "../hooks/use-api";
 import { Download, FileText, Languages, Loader2, Play, Upload } from "lucide-react";
@@ -122,8 +123,8 @@ const LANGUAGE_PRESETS_EN = [
 
 export function TranslationManager({ nav, theme, t }: { nav: Nav; theme: Theme; t: TFunction }) {
   const c = useColors(theme);
-  const isZh = t("nav.connected") === "已连接";
-  const languagePresets = isZh ? LANGUAGE_PRESETS_ZH : LANGUAGE_PRESETS_EN;
+  const { lang } = useI18n();
+  const languagePresets = lang === "zh" ? LANGUAGE_PRESETS_ZH : lang === "ko" ? LANGUAGE_PRESETS_EN : LANGUAGE_PRESETS_EN;
   const { data, loading, error, refetch } = useApi<TranslationListResponse>("/translations");
   const [selectedId, setSelectedId] = useState("");
   const [detail, setDetail] = useState<TranslationDetailResponse | null>(null);
@@ -133,8 +134,8 @@ export function TranslationManager({ nav, theme, t }: { nav: Nav; theme: Theme; 
   const [file, setFile] = useState<File | null>(null);
   const [uploaded, setUploaded] = useState<TranslationUploadResponse | null>(null);
   const [title, setTitle] = useState("");
-  const [sourceLanguage, setSourceLanguage] = useState(isZh ? "自动识别" : "Auto detect");
-  const [targetLanguage, setTargetLanguage] = useState(isZh ? "中文（简体）" : "English");
+  const [sourceLanguage, setSourceLanguage] = useState(lang === "zh" ? "自动识别" : lang === "ko" ? "자동 감지" : "Auto detect");
+  const [targetLanguage, setTargetLanguage] = useState(lang === "zh" ? "中文（简体）" : lang === "ko" ? "한국어" : "English");
   const [segmentMaxChars, setSegmentMaxChars] = useState(1200);
   const [previewChapterNumber, setPreviewChapterNumber] = useState<number | null>(null);
 
@@ -178,7 +179,7 @@ export function TranslationManager({ nav, theme, t }: { nav: Nav; theme: Theme; 
       });
       setUploaded(res);
       if (!title.trim()) setTitle(file.name.replace(/\.[^.]+$/u, ""));
-      setStatus(isZh ? `已上传：${res.storedPath}` : `Uploaded: ${res.storedPath}`);
+      setStatus(lang === "zh" ? `已上传：${res.storedPath}` : lang === "ko" ? `업로드됨: ${res.storedPath}` : `Uploaded: ${res.storedPath}`);
     } catch (err) {
       setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -203,7 +204,7 @@ export function TranslationManager({ nav, theme, t }: { nav: Nav; theme: Theme; 
         }),
       });
       setSelectedId(res.projectId);
-      setStatus(isZh ? `已创建翻译项目：${res.title}` : `Created translation project: ${res.title}`);
+      setStatus(lang === "zh" ? `已创建翻译项目：${res.title}` : lang === "ko" ? `번역 프로젝트 생성됨: ${res.title}` : `Created translation project: ${res.title}`);
       await refetch();
     } catch (err) {
       setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`);
@@ -222,8 +223,10 @@ export function TranslationManager({ nav, theme, t }: { nav: Nav; theme: Theme; 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ batchSize: 8 }),
       });
-      setStatus(isZh
+      setStatus(lang === "zh"
         ? `翻译 ${res.translatedSegments} 段，审校 ${res.reviewedChapters} 章。报告：${res.reportPath}`
+        : lang === "ko"
+        ? `번역 ${res.translatedSegments}개 세그먼트, ${res.reviewedChapters}개 챕터 검수. 보고서: ${res.reportPath}`
         : `Translated ${res.translatedSegments} segments, reviewed ${res.reviewedChapters} chapters. Report: ${res.reportPath}`);
       await refetch();
       const updated = await fetchJson<TranslationDetailResponse>(`/translations/${encodeURIComponent(selected.projectId)}`);
@@ -246,7 +249,7 @@ export function TranslationManager({ nav, theme, t }: { nav: Nav; theme: Theme; 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format }),
       });
-      setStatus(isZh ? `已导出 ${format}: ${res.outputPath}` : `Exported ${format}: ${res.outputPath}`);
+      setStatus(lang === "zh" ? `已导出 ${format}: ${res.outputPath}` : lang === "ko" ? `내보냄 ${format}: ${res.outputPath}` : `Exported ${format}: ${res.outputPath}`);
     } catch (err) {
       setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -332,7 +335,7 @@ export function TranslationManager({ nav, theme, t }: { nav: Nav; theme: Theme; 
               {languagePresets.map((language) => <option key={`source-${language}`} value={language} />)}
             </datalist>
             <datalist id="translation-target-language-options">
-              {languagePresets.filter((language) => language !== (isZh ? "自动识别" : "Auto detect")).map((language) => (
+              {languagePresets.filter((language) => language !== (lang === "zh" ? "自动识别" : lang === "ko" ? "자동 감지" : "Auto detect")).map((language) => (
                 <option key={`target-${language}`} value={language} />
               ))}
             </datalist>

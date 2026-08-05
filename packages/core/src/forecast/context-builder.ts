@@ -173,7 +173,6 @@ async function readIfExists(path: string): Promise<string | null> {
 }
 
 export function renderForecastContextMarkdown(context: ForecastContext): string {
-  const isZh = context.language === "zh";
   const isKo = context.language === "ko";
   const isEn = context.language === "en";
   const sectionList: ReadonlyArray<readonly [string, string]> = [

@@ -1,34 +1,34 @@
 import { ChevronLeft } from "lucide-react";
 import type { HoldingRow } from "./types";
-import { KIND_LABEL_ZH, KIND_LABEL_EN, LADDER_LABEL_ZH, LADDER_LABEL_EN } from "./types";
+import { KIND_LABELS, LADDER_LABELS } from "./types";
 import { RelationWeb } from "./RelationWeb";
 
 export function HoldingInspect(props: {
   readonly row: HoldingRow;
-  readonly isZh: boolean;
+  readonly lang: "zh" | "ko" | "en";
   readonly generating?: boolean;
   readonly onBack: () => void;
 }) {
-  const { row, isZh, generating, onBack } = props;
+  const { row, lang, generating, onBack } = props;
   const { lifecycle } = row;
-  const kind = (isZh ? KIND_LABEL_ZH : KIND_LABEL_EN)[row.kind] ?? row.kind;
-  const ladderLabel = isZh ? LADDER_LABEL_ZH : LADDER_LABEL_EN;
+  const kindLabel = KIND_LABELS[lang][row.kind] ?? row.kind;
+  const ladderLabel = LADDER_LABELS[lang];
   return (
     <div className="min-w-0 space-y-3">
       <button type="button" onClick={onBack} className="flex items-center gap-1 text-[14px] leading-6 text-muted-foreground hover:text-foreground">
-        <ChevronLeft size={14} /> {isZh ? "返回" : "Back"}
+        <ChevronLeft size={14} /> {lang === "zh" ? "返回" : lang === "ko" ? "뒤로" : "Back"}
       </button>
 
       <div className="min-w-0 overflow-hidden rounded-xl border border-border/40 bg-secondary/30">
         <div className="flex min-h-[180px] items-center justify-center bg-gradient-to-b from-secondary/60 to-transparent text-4xl">
-          {row.imageUrl ? <img src={row.imageUrl} alt="" aria-hidden="true" className="max-h-[320px] w-full object-contain" /> : <span>{generating ? "⏳" : row.glyph}</span>}
+          {row.imageUrl ? <img src={row.imageUrl} alt="" aria-hidden="true" className="max-h-[320px] w-full object-contain" /> : <span>{generating ? "?" : row.glyph}</span>}
         </div>
 
         <div className="min-w-0 space-y-3 px-3 py-3">
           <div className="min-w-0">
             <div className="flex min-w-0 items-start gap-2">
               <span className="min-w-0 flex-1 break-words text-[17px] leading-6 font-bold text-foreground">{row.label}</span>
-              <span className="shrink-0 pt-0.5 text-[13px] text-muted-foreground">{kind}</span>
+              <span className="shrink-0 pt-0.5 text-[13px] text-muted-foreground">{kindLabel}</span>
             </div>
             {row.summary ? <p className="mt-1 break-words text-[14px] leading-6 text-muted-foreground">{row.summary}</p> : null}
           </div>
@@ -53,7 +53,7 @@ export function HoldingInspect(props: {
             <div>
               <span className="inline-block rounded-full bg-secondary/60 px-2.5 py-1 text-[14px] leading-5 font-medium text-foreground">{row.statusPill}</span>
               {row.isFresh ? (
-                <p className="mt-1.5 text-[13px] leading-5 text-emerald-300">▲ {isZh ? "刚获得" : "Just acquired"}</p>
+                <p className="mt-1.5 text-[13px] leading-5 text-emerald-300">▲ {lang === "zh" ? "刚获得" : lang === "ko" ? "새로 획득" : "Just acquired"}</p>
               ) : row.changeReason ? (
                 <p className="mt-1.5 break-words text-[13px] leading-5 text-emerald-300">▲ {row.changeReason}</p>
               ) : null}
@@ -62,7 +62,7 @@ export function HoldingInspect(props: {
 
           {row.meters.length > 0 ? (
             <div className="space-y-1.5">
-              <h4 className="text-[13px] leading-5 uppercase tracking-wider text-muted-foreground/60">{isZh ? "属性" : "Stats"}</h4>
+              <h4 className="text-[13px] leading-5 uppercase tracking-wider text-muted-foreground/60">{lang === "zh" ? "属性" : lang === "ko" ? "속성" : "Stats"}</h4>
               {row.meters.map((m) => (
                 <div key={m.id} className="flex min-w-0 items-center gap-2 text-[14px] leading-6">
                   <span className="w-12 shrink-0 break-words text-muted-foreground">{m.label}</span>
@@ -79,14 +79,14 @@ export function HoldingInspect(props: {
 
           {row.relations.length > 0 ? (
             <div className="min-w-0">
-              <h4 className="mb-1 text-[13px] leading-5 uppercase tracking-wider text-muted-foreground/60">{isZh ? "牵动" : "Connections"}</h4>
-              <RelationWeb centerLabel={row.label} relations={row.relations} isZh={isZh} />
+              <h4 className="mb-1 text-[13px] leading-5 uppercase tracking-wider text-muted-foreground/60">{lang === "zh" ? "牵动" : lang === "ko" ? "연결" : "Connections"}</h4>
+              <RelationWeb centerLabel={row.label} relations={row.relations} lang={lang} />
             </div>
           ) : null}
 
           {row.provenanceTurn != null ? (
             <p className="break-words border-t border-border/30 pt-2 text-[13px] leading-5 text-muted-foreground/70">
-              {isZh ? `第 ${row.provenanceTurn} 幕 取得` : `Acquired · Turn ${row.provenanceTurn}`}
+              {lang === "zh" ? `第 ${row.provenanceTurn} 幕 取得` : lang === "ko" ? `제 ${row.provenanceTurn}막 획득` : `Acquired · Turn ${row.provenanceTurn}`}
             </p>
           ) : null}
         </div>
