@@ -82,7 +82,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
 
   const resolvedCustomName = persistedCustomName || customName.trim() || "Custom";
   const effectiveServiceId = isCustom ? `custom:${resolvedCustomName}` : serviceId;
-  const label = isCustom ? (customName || persistedCustomName || tr("自定义服务", "Custom service")) : (svc?.label ?? serviceId);
+  const label = isCustom ? (customName || persistedCustomName || tr("自定义服务", "커스텀 서비스", "Custom service")) : (svc?.label ?? serviceId);
   const storeModels = useServiceStore((s) => s.modelsByService[effectiveServiceId]);
 
   useEffect(() => {
@@ -132,11 +132,11 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
   const handleTest = async () => {
     const trimmedKey = apiKey.trim();
     if (!trimmedKey && !isCustom && !apiKeyOptional) {
-      setStatus({ state: "error", message: tr("请先输入 API Key", "Enter an API key first") });
+      setStatus({ state: "error", message: tr("请先输入 API Key", "먼저 API 키를 입력하세요", "Enter an API key first") });
       return;
     }
     if (isCustom && !baseUrl.trim()) {
-      setStatus({ state: "error", message: tr("请先填写 Base URL", "Enter a base URL first") });
+      setStatus({ state: "error", message: tr("请先填写 Base URL", "먼저 Base URL을 입력하세요", "Enter a base URL first") });
       return;
     }
     setApiKey(trimmedKey);
@@ -171,17 +171,17 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
         setStoreModels(effectiveServiceId, models); // Write to global store
       } else {
         setVerifiedProbe(null);
-        setStatus({ state: "error", message: result.error ?? tr("连接失败", "Connection failed") });
+        setStatus({ state: "error", message: result.error ?? tr("连接失败", "연결 실패", "Connection failed") });
         clearStoreModels(effectiveServiceId);
       }
     } catch (e) {
       setVerifiedProbe(null);
-      setStatus({ state: "error", message: e instanceof Error ? e.message : tr("连接失败", "Connection failed") });
+      setStatus({ state: "error", message: e instanceof Error ? e.message : tr("连接失败", "연결 실패", "Connection failed") });
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(tr(`删除“${label}”的配置和密钥？`, `Delete the config and key for “${label}”?`))) return;
+    if (!window.confirm(tr(`删除“${label}”的配置和密钥？`, `"${label}"의 설정과 키를 삭제하시겠습니까?`, `Delete the config and key for “${label}”?`))) return;
     setStatus({ state: "saving" });
     try {
       await deleteServiceConfig(effectiveServiceId);
@@ -189,7 +189,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
       await refreshServices();
       nav.toServices();
     } catch (e) {
-      setStatus({ state: "error", message: e instanceof Error ? e.message : tr("删除失败", "Delete failed") });
+      setStatus({ state: "error", message: e instanceof Error ? e.message : tr("删除失败", "삭제 실패", "Delete failed") });
     }
   };
 
@@ -197,7 +197,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
     const trimmedKey = apiKey.trim();
     setApiKey(trimmedKey);
     if (isCustom && !baseUrl.trim()) {
-      setStatus({ state: "error", message: tr("请先填写 Base URL", "Enter a base URL first") });
+      setStatus({ state: "error", message: tr("请先填写 Base URL", "먼저 Base URL을 입력하세요", "Enter a base URL first") });
       return;
     }
     setStatus({ state: "saving" });
@@ -231,7 +231,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
       await refreshServices();
       nav.toServices();
     } catch (e) {
-      setStatus({ state: "error", message: e instanceof Error ? e.message : tr("保存失败", "Save failed") });
+      setStatus({ state: "error", message: e instanceof Error ? e.message : tr("保存失败", "저장 실패", "Save failed") });
     }
   };
 
@@ -243,7 +243,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
         className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/60 px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/50 transition-colors"
       >
         <ArrowLeft size={14} />
-        {tr("返回服务商管理", "Back to providers")}
+        {tr("返回服务商管理", "서비스 제공자 관리로 돌아가기", "Back to providers")}
       </button>
 
       {/* Title + status */}
@@ -251,7 +251,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
         <h1 className="font-serif text-2xl">{label}</h1>
         {isConnected && (
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
-            {tr("已连接", "Connected")}
+            {tr("已连接", "연결됨", "Connected")}
           </span>
         )}
       </div>
@@ -261,9 +261,9 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
         {/* Custom fields */}
         {isCustom && (
         <div className="grid grid-cols-2 gap-4">
-            <Field label={tr("服务名称", "Service name")}>
+            <Field label={tr("服务名称", "서비스 이름", "Service name")}>
               <input type="text" value={customName} onChange={(e) => setCustomName(e.target.value)}
-                placeholder={tr("例如：本地 Ollama", "e.g. local Ollama")} className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm" />
+                placeholder={tr("例如：本地 Ollama", "예: 로컬 Ollama", "e.g. local Ollama")} className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm" />
             </Field>
             <Field label="Base URL">
               <input type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)}
@@ -273,11 +273,11 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
         )}
 
         {/* API Key */}
-        <Field label={apiKeyOptional ? tr("API Key（可选）", "API key (optional)") : "API Key"}>
+        <Field label={apiKeyOptional ? tr("API Key（可选）", "API 키 (선택)", "API key (optional)") : "API Key"}>
           <div className="relative">
             <input
               type={showKey ? "text" : "password"} value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)} placeholder={apiKeyOptional ? tr("本地服务可留空", "Optional for local service") : "sk-..."}
+              onChange={(e) => setApiKey(e.target.value)} placeholder={apiKeyOptional ? tr("本地服务可留空", "로컬 서비스는 비워두세요", "Optional for local service") : "sk-..."}
               className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 pr-10 text-sm font-mono"
             />
             <button type="button" onClick={() => setShowKey((v) => !v)}
@@ -292,27 +292,28 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
           <button onClick={handleTest} disabled={isBusy}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs rounded-lg border border-border/60 hover:bg-secondary/50 transition-colors disabled:opacity-50">
             {status.state === "testing" && <Loader2 size={12} className="animate-spin" />}
-            {tr("测试连接", "Test connection")}
+            {tr("测试连接", "연결 테스트", "Test connection")}
           </button>
           <button onClick={handleSave} disabled={isBusy}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">
             {status.state === "saving" && <Loader2 size={12} className="animate-spin" />}
-            {tr("保存", "Save")}
+            {tr("保存", "저장", "Save")}
           </button>
           {(isConnected || isCustom) && (
             <button onClick={handleDelete} disabled={isBusy}
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50">
               <Trash2 size={12} />
-              {tr("删除配置", "Delete config")}
+              {tr("删除配置", "설정 삭제", "Delete config")}
             </button>
           )}
           {/* Status feedback */}
           {status.state === "connected" && (
             <span className="text-xs text-emerald-500">
-              {tr(`连接成功，${models.length} 个模型`, `Connected, ${models.length} models`)}
+              {tr(`连接成功，${models.length} 个模型`, `연결 성공, ${models.length}개 모델`, `Connected, ${models.length} models`)}
               {detectedModel
                 ? tr(
                     `，已自动匹配 ${detectedModel}${detectedConfig ? ` / ${detectedConfig.apiFormat === "responses" ? "Responses" : "Chat"} / ${detectedConfig.stream ? "流式" : "非流式"}` : ""}`,
+                    `, 자동 매칭됨 ${detectedModel}${detectedConfig ? ` / ${detectedConfig.apiFormat === "responses" ? "Responses" : "Chat"} / ${detectedConfig.stream ? "스트리밍" : "비스트리밍"}` : ""}`,
                     `, auto-matched ${detectedModel}${detectedConfig ? ` / ${detectedConfig.apiFormat === "responses" ? "Responses" : "Chat"} / ${detectedConfig.stream ? "streaming" : "non-streaming"}` : ""}`,
                   )
                 : ""}
@@ -322,12 +323,12 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
             <span className="text-xs text-destructive">{status.message}</span>
           )}
           {status.state === "saved" && (
-            <span className="text-xs text-emerald-500">{tr("已保存", "Saved")}</span>
+            <span className="text-xs text-emerald-500">{tr("已保存", "저장됨", "Saved")}</span>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label={tr("协议类型", "Protocol")}>
+          <Field label={tr("协议类型", "프로토콜 유형", "Protocol")}>
             <select
               value={apiFormat}
               onChange={(e) => setApiFormat(e.target.value as "chat" | "responses")}
@@ -338,14 +339,14 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
             </select>
           </Field>
 
-          <Field label={tr("流式响应", "Streaming")}>
+          <Field label={tr("流式响应", "스트리밍 응답", "Streaming")}>
             <label className="flex h-10 items-center gap-2 rounded-lg border border-border/60 bg-background px-3 text-sm">
               <input
                 type="checkbox"
                 checked={stream}
                 onChange={(e) => setStream(e.target.checked)}
               />
-              <span>{stream ? tr("开启", "On") : tr("关闭", "Off")}</span>
+              <span>{stream ? tr("开启", "켜기", "On") : tr("关闭", "닫기", "Off")}</span>
             </label>
           </Field>
         </div>
@@ -354,7 +355,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
         {isConnected && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground/70 font-medium uppercase tracking-wider">
-              {tr(`可用模型（${models.length}）`, `Available models (${models.length})`)}
+              {tr(`可用模型（${models.length}）`, `사용 가능 모델 (${models.length}개)`, `Available models (${models.length})`)}
             </p>
             {models.length > 0 ? (
               <div className="flex gap-1.5 flex-wrap">
@@ -365,7 +366,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground/60">{tr("点击“测试连接”查看可用模型", "Click “Test connection” to list available models")}</p>
+              <p className="text-xs text-muted-foreground/60">{tr("点击“测试连接”查看可用模型", "\"연결 테스트\"를 클릭하여 사용 가능 모델 보기", "Click “Test connection” to list available models")}</p>
             )}
           </div>
         )}
@@ -373,7 +374,7 @@ export function ServiceDetailPage({ serviceId, nav }: { serviceId: string; nav: 
         {/* Advanced params */}
         <details className="group pt-2 border-t border-border/20">
           <summary className="text-xs text-muted-foreground/60 cursor-pointer select-none hover:text-muted-foreground transition-colors py-2">
-            {tr("高级参数", "Advanced")}
+            {tr("高级参数", "고급 매개변수", "Advanced")}
           </summary>
           <div className="space-y-4 pt-2">
             <Field label="temperature">

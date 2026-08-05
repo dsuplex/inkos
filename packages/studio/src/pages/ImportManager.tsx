@@ -243,21 +243,21 @@ export function ImportManager({ nav, theme, t, initialTab }: { nav: Nav; theme: 
             <div className="grid grid-cols-3 gap-3">
               <select value={ffMode} onChange={(e) => setFfMode(e.target.value)}
                 className="px-3 py-2 rounded-lg bg-secondary/30 border border-border text-sm">
-                <option value="canon">{tr("原著向", "Canon-compliant")}</option>
-                <option value="au">{tr("架空 AU", "Alternate Universe (AU)")}</option>
-                <option value="ooc">{tr("性格偏离 OOC", "Out of Character (OOC)")}</option>
-                <option value="cp">{tr("配对 CP", "Pairing (CP)")}</option>
+                <option value="canon">{tr("原著向", "원작 준수", "Canon-compliant")}</option>
+                <option value="au">{tr("架空 AU", "패러렐 AU", "Alternate Universe (AU)")}</option>
+                <option value="ooc">{tr("性格偏离 OOC", "캐릭터 붕괴 OOC", "Out of Character (OOC)")}</option>
+                <option value="cp">{tr("配对 CP", "커플링 CP", "Pairing (CP)")}</option>
               </select>
               <select value={ffGenre} onChange={(e) => setFfGenre(e.target.value)}
                 className="px-3 py-2 rounded-lg bg-secondary/30 border border-border text-sm">
-                <option value="other">{tr("其他", "Other")}</option>
-                <option value="xuanhuan">{tr("玄幻", "Xuanhuan Fantasy")}</option>
-                <option value="urban">{tr("都市", "Urban")}</option>
-                <option value="xianxia">{tr("仙侠", "Xianxia")}</option>
+                <option value="other">{tr("其他", "기타", "Other")}</option>
+                <option value="xuanhuan">{tr("玄幻", "현판", "Xuanhuan Fantasy")}</option>
+                <option value="urban">{tr("都市", "도시", "Urban")}</option>
+                <option value="xianxia">{tr("仙侠", "선협", "Xianxia")}</option>
               </select>
               <select value={ffLang} onChange={(e) => setFfLang(e.target.value as "zh" | "ko" | "en")}
                 className="px-3 py-2 rounded-lg bg-secondary/30 border border-border text-sm">
-                <option value="zh">{tr("中文", "Chinese")}</option>
+                <option value="zh">{tr("中文", "한국어", "Chinese")}</option>
                 <option value="en">English</option>
               </select>
             </div>
@@ -305,14 +305,14 @@ export function ImportManager({ nav, theme, t, initialTab }: { nav: Nav; theme: 
             <div className="grid grid-cols-2 gap-3">
               <select value={imGenre} onChange={(e) => setImGenre(e.target.value)}
                 className="px-3 py-2 rounded-lg bg-secondary/30 border border-border text-sm">
-                <option value="other">{tr("其他", "Other")}</option>
-                <option value="xuanhuan">{tr("玄幻", "Xuanhuan Fantasy")}</option>
-                <option value="urban">{tr("都市", "Urban")}</option>
-                <option value="xianxia">{tr("仙侠", "Xianxia")}</option>
+                <option value="other">{tr("其他", "기타", "Other")}</option>
+                <option value="xuanhuan">{tr("玄幻", "현판", "Xuanhuan Fantasy")}</option>
+                <option value="urban">{tr("都市", "도시", "Urban")}</option>
+                <option value="xianxia">{tr("仙侠", "선협", "Xianxia")}</option>
               </select>
               <select value={imLang} onChange={(e) => setImLang(e.target.value as "zh" | "ko" | "en")}
                 className="px-3 py-2 rounded-lg bg-secondary/30 border border-border text-sm">
-                <option value="zh">{tr("中文", "Chinese")}</option>
+                <option value="zh">{tr("中文", "한국어", "Chinese")}</option>
                 <option value="en">English</option>
               </select>
             </div>

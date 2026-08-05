@@ -104,14 +104,14 @@ export function SummarySection({ bookId }: SummarySectionProps) {
     return (
       <>
         {legacy.world && (
-          <SidebarCard title={tr("世界观", "World")}>
+          <SidebarCard title={tr("世界观", "세계관", "World")}>
             <Streamdown className={SIDEBAR_MD_CLASS} plugins={streamdownPlugins}>
               {legacy.world}
             </Streamdown>
           </SidebarCard>
         )}
         {(legacy.protagonist || legacy.cast) && (
-          <SidebarCard title={tr("角色", "Characters")}>
+          <SidebarCard title={tr("角色", "캐릭터", "Characters")}>
             {legacy.protagonist && (
               <Streamdown className={SIDEBAR_MD_CLASS} plugins={streamdownPlugins}>
                 {legacy.protagonist}
@@ -137,20 +137,20 @@ export function SummarySection({ bookId }: SummarySectionProps) {
       onClick={() => openArtifact("outline/story_frame.md")}
       className="mt-2 text-[15px] leading-6 text-primary hover:underline font-['SimSun','Songti_SC','STSong',serif]"
     >
-      {tr("查看完整设定 →", "View full foundation →")}
+      {tr("查看完整设定 →", "전체 설정 보기 →", "View full foundation →")}
     </button>
   );
 
   return (
     <>
       {cards.length > 0 && (
-        <SidebarCard title={tr("故事基石", "Story Foundation")}>
+        <SidebarCard title={tr("故事基石", "스토리 기초", "Story Foundation")}>
           <FrontmatterCards cards={cards} />
           {!worldOverview && openFull}
         </SidebarCard>
       )}
       {worldOverview && (
-        <SidebarCard title={tr("世界观", "World")}>
+        <SidebarCard title={tr("世界观", "세계관", "World")}>
           <Streamdown className={SIDEBAR_MD_CLASS} plugins={streamdownPlugins}>
             {worldOverview}
           </Streamdown>

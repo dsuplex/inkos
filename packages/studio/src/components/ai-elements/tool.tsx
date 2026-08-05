@@ -45,16 +45,16 @@ export type ToolHeaderProps = {
     }
 );
 
-// [zh, en] tuples resolved through tr() at render time so the badge follows
+// [zh, ko, en] tuples resolved through tr() at render time so the badge follows
 // the current app language instead of the language active at module load.
-const statusLabels: Record<ToolPart["state"], readonly [string, string]> = {
-  "approval-requested": ["等待确认", "Awaiting approval"],
-  "approval-responded": ["已响应", "Responded"],
-  "input-available": ["执行中", "Running"],
-  "input-streaming": ["处理中", "Processing"],
-  "output-available": ["已完成", "Completed"],
-  "output-denied": ["已拒绝", "Denied"],
-  "output-error": ["出错", "Error"],
+const statusLabels: Record<ToolPart["state"], readonly [string, string, string]> = {
+  "approval-requested": ["等待确认", "확인 대기", "Awaiting approval"],
+  "approval-responded": ["已响应", "응답 완료", "Responded"],
+  "input-available": ["执行中", "실행 중", "Running"],
+  "input-streaming": ["处理中", "처리 중", "Processing"],
+  "output-available": ["已完成", "완료됨", "Completed"],
+  "output-denied": ["已拒绝", "거부됨", "Denied"],
+  "output-error": ["出错", "오류", "Error"],
 };
 
 const statusIcons: Record<ToolPart["state"], ReactNode> = {
@@ -70,7 +70,7 @@ const statusIcons: Record<ToolPart["state"], ReactNode> = {
 export const getStatusBadge = (status: ToolPart["state"]) => (
   <Badge className="gap-1.5 rounded-full text-xs" variant="secondary">
     {statusIcons[status]}
-    {tr(statusLabels[status][0], statusLabels[status][1])}
+    {tr(statusLabels[status][0], statusLabels[status][1], statusLabels[status][2])}
   </Badge>
 );
 

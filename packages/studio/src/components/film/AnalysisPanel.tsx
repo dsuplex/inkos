@@ -107,10 +107,10 @@ function IssuesList({ report, c }: { report: AnalysisReport; c: Colors }) {
   return (
     <div className="border border-border rounded p-3" data-testid="validation-panel">
       <div className={`text-sm font-medium ${c.muted}`}>
-        {tr("校验", "Validation")}{report.ok ? "" : tr("（有阻断问题）", " (blocking issues)")}
+        {tr("校验", "검증", "Validation")}{report.ok ? "" : tr("（有阻断问题）", "(차단 문제 있음)", " (blocking issues)")}
       </div>
       {report.issues.length === 0 ? (
-        <div className={`text-sm mt-1 ${c.muted}`}>{tr("无问题", "No issues")}</div>
+        <div className={`text-sm mt-1 ${c.muted}`}>{tr("无问题", "문제 없음", "No issues")}</div>
       ) : (
         <ul className="mt-1 space-y-1">
           {report.issues.map((issue, i) => (
@@ -136,15 +136,15 @@ function EmotionArcChart({ arcs, c }: { arcs: EmotionArcs; c: Colors }) {
 
   return (
     <div data-testid="emotion-arc" className="border border-border rounded p-3">
-      <div className={`text-sm font-medium mb-2 ${c.muted}`}>{tr("情感曲线", "Emotion arcs")}</div>
+      <div className={`text-sm font-medium mb-2 ${c.muted}`}>{tr("情感曲线", "감정 곡선", "Emotion arcs")}</div>
       {displayArcs.length === 0 ? (
-        <div className={`text-sm ${c.muted}`}>{tr("暂无可分析路径", "No paths to analyze")}</div>
+        <div className={`text-sm ${c.muted}`}>{tr("暂无可分析路径", "분석할 경로 없음", "No paths to analyze")}</div>
       ) : (
         <>
           <svg
             width="100%"
             viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-            aria-label={tr("情感曲线图", "Emotion arc chart")}
+            aria-label={tr("情感曲线图", "감정 곡선 차트", "Emotion arc chart")}
             className="rounded bg-muted/10"
             style={{ maxHeight: SVG_H }}
           >
@@ -183,14 +183,14 @@ function EmotionArcChart({ arcs, c }: { arcs: EmotionArcs; c: Colors }) {
                   className="inline-block w-4 h-0.5 rounded-full"
                   style={{ background: ARC_STROKE_COLORS[idx % ARC_STROKE_COLORS.length] }}
                 />
-                <span className={c.muted}>{arc.endingId ?? tr("无结局", "No ending")}</span>
+                <span className={c.muted}>{arc.endingId ?? tr("无结局", "결말 없음", "No ending")}</span>
               </span>
             ))}
           </div>
           {(overLimit || arcs.truncated) && (
             <div className={`text-xs mt-1 ${c.muted}`}>
-              {overLimit && tr(`仅显示前 ${MAX_ARC_DISPLAY} 条路径`, `Showing first ${MAX_ARC_DISPLAY} paths only`)}
-              {arcs.truncated && tr("（路径总数已超过枚举上限）", " (total paths exceed the enumeration limit)")}
+              {overLimit && tr(`仅显示前 ${MAX_ARC_DISPLAY} 条路径`, `앞의 ${MAX_ARC_DISPLAY}개 경로만 표시`, `Showing first ${MAX_ARC_DISPLAY} paths only`)}
+              {arcs.truncated && tr("（路径总数已超过枚举上限）", "(총 경로 수가 열거 한도 초과)", " (total paths exceed the enumeration limit)")}
             </div>
           )}
         </>
@@ -214,16 +214,16 @@ function PathDistributionPanel({
 
   return (
     <div data-testid="path-distribution" className="border border-border rounded p-3">
-      <div className={`text-sm font-medium mb-2 ${c.muted}`}>{tr("路径分布", "Path distribution")}</div>
+      <div className={`text-sm font-medium mb-2 ${c.muted}`}>{tr("路径分布", "경로 분포", "Path distribution")}</div>
 
       {distribution.truncated && (
         <div className={`text-xs mb-2 ${c.muted}`}>
-          {tr(`路径过多，仅统计前 ${distribution.total} 条`, `Too many paths; only the first ${distribution.total} are counted`)}
+          {tr(`路径过多，仅统计前 ${distribution.total} 条`, `경로가 너무 많음; 앞의 ${distribution.total}개만 집계`, `Too many paths; only the first ${distribution.total} are counted`)}
         </div>
       )}
 
       {endingEntries.length === 0 ? (
-        <div className={`text-sm ${c.muted}`}>{tr("暂无路径数据", "No path data")}</div>
+        <div className={`text-sm ${c.muted}`}>{tr("暂无路径数据", "경로 데이터 없음", "No path data")}</div>
       ) : (
         <div className="space-y-1.5 mb-4">
           {endingEntries.map(([endingId, count]) => {
@@ -253,7 +253,7 @@ function PathDistributionPanel({
 
       {histEntries.length > 0 && (
         <div>
-          <div className={`text-xs font-medium mb-2 ${c.muted}`}>{tr("路径长度分布", "Path length distribution")}</div>
+          <div className={`text-xs font-medium mb-2 ${c.muted}`}>{tr("路径长度分布", "경로 길이 분포", "Path length distribution")}</div>
           <div className="flex items-end gap-1 h-12">
             {histEntries.map(({ len, count }) => {
               const heightPct = (count / maxHistCount) * 100;
@@ -265,7 +265,7 @@ function PathDistributionPanel({
                   <div
                     className="w-full bg-primary/50 rounded-t"
                     style={{ height: `${heightPct}%` }}
-                    title={tr(`长度 ${len}: ${count} 条`, `Length ${len}: ${count} paths`)}
+                    title={tr(`长度 ${len}: ${count} 条`, `길이 ${len}: ${count}개`, `Length ${len}: ${count} paths`)}
                   />
                   <span className={`text-xs leading-none ${c.muted}`}>{len}</span>
                 </div>
@@ -295,15 +295,15 @@ export function AnalysisPanel({
   );
 
   if (loading) {
-    return <div className={`p-4 text-sm ${c.muted}`}>{tr("正在加载分析结果…", "Loading analysis…")}</div>;
+    return <div className={`p-4 text-sm ${c.muted}`}>{tr("正在加载分析结果…", "분석 결과 로딩 중…", "Loading analysis…")}</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-sm text-destructive">{tr("加载失败：", "Load failed: ")}{error}</div>;
+    return <div className="p-4 text-sm text-destructive">{tr("加载失败：", "로드 실패: ", "Load failed: ")}{error}</div>;
   }
 
   if (!data) {
-    return <div className={`p-4 text-sm ${c.muted}`}>{tr("暂无分析数据", "No analysis data")}</div>;
+    return <div className={`p-4 text-sm ${c.muted}`}>{tr("暂无分析数据", "분석 데이터 없음", "No analysis data")}</div>;
   }
 
   return (

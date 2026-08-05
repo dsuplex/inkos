@@ -12,7 +12,9 @@ export function getAppLanguage(): AppLanguage {
   return current;
 }
 
-/** 内联双语：tr("中文", "English")。默认中文，保持既有测试与默认体验不变。 */
-export function tr(zh: string, en: string): string {
-  return current === "en" ? en : zh;
+/** 内联三语：tr("中文", "한국어", "English")。 */
+export function tr(zh: string, ko: string, en: string): string {
+  if (current === "en") return en;
+  if (current === "ko") return ko;
+  return zh;
 }

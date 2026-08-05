@@ -53,13 +53,13 @@ type Colors = ReturnType<typeof useColors>;
 // ---------------------------------------------------------------------------
 
 // 标签在渲染时通过 tr() 解析语言，模块加载时不能固化成单一语言字符串，
-// 所以这里存 zh/en 对。
-const PHASE_LABELS: Record<Phase, { zh: string; en: string }> = {
-  world: { zh: "世界", en: "World" },
-  scale: { zh: "规模", en: "Scale" },
-  structure: { zh: "结构", en: "Structure" },
-  workshop: { zh: "逐节点", en: "Nodes" },
-  validate: { zh: "校验", en: "Validate" },
+// 所以这里存 zh/ko/en 对。
+const PHASE_LABELS: Record<Phase, { zh: string; ko: string; en: string }> = {
+  world: { zh: "世界", ko: "세계", en: "World" },
+  scale: { zh: "规模", ko: "규모", en: "Scale" },
+  structure: { zh: "结构", ko: "구조", en: "Structure" },
+  workshop: { zh: "逐节点", ko: "노드별", en: "Nodes" },
+  validate: { zh: "校验", ko: "검증", en: "Validate" },
 };
 
 
@@ -71,19 +71,19 @@ const DEFAULT_SUBVIEW: Record<Phase, string> = {
   validate: "validate",
 };
 
-const PHASE_SUBVIEWS: Record<Phase, ReadonlyArray<{ key: string; zh: string; en: string }>> = {
+const PHASE_SUBVIEWS: Record<Phase, ReadonlyArray<{ key: string; zh: string; ko: string; en: string }>> = {
   world: [
-    { key: "chat", zh: "对话", en: "Chat" },
-    { key: "anchor", zh: "世界锚点", en: "World anchor" },
+    { key: "chat", zh: "对话", ko: "대화", en: "Chat" },
+    { key: "anchor", zh: "世界锚点", ko: "세계 앵커", en: "World anchor" },
   ],
   scale: [],
   structure: [
-    { key: "flow", zh: "流程图", en: "Flow" },
-    { key: "tree", zh: "树", en: "Tree" },
+    { key: "flow", zh: "流程图", ko: "플로우 차트", en: "Flow" },
+    { key: "tree", zh: "树", ko: "트리", en: "Tree" },
   ],
   workshop: [
-    { key: "tree", zh: "树", en: "Tree" },
-    { key: "chat", zh: "对话", en: "Chat" },
+    { key: "tree", zh: "树", ko: "트리", en: "Tree" },
+    { key: "chat", zh: "对话", ko: "대화", en: "Chat" },
   ],
   validate: [],
 };
@@ -120,6 +120,7 @@ function WorldAnchorView({
       <div className={`p-6 text-sm ${c.muted}`}>
         {tr(
           "暂无世界锚点。请先切换到「对话」，请 AI 帮您设定世界观和角色。",
+          "세계 앵커가 없습니다. 먼저 '대화'로 전환해 AI에게 세계관과 캐릭터 설정을 요청하세요.",
           "No world anchor yet. Switch to “Chat” and ask the AI to set up the world and characters.",
         )}
       </div>
@@ -130,34 +131,34 @@ function WorldAnchorView({
   return (
     <div className="p-4 space-y-3 text-sm" data-testid="film-world">
       <div>
-        <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("故事核心", "Story core")}</div>
+        <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("故事核心", "스토리 핵심", "Story core")}</div>
         <div className="text-foreground">{worldAnchor.storyCore || "—"}</div>
       </div>
       <div className="flex gap-6">
         <div>
-          <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("主题", "Theme")}</div>
+          <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("主题", "테마", "Theme")}</div>
           <div>{worldAnchor.theme || "—"}</div>
         </div>
         <div>
-          <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("题材", "Genre")}</div>
+          <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("题材", "장르", "Genre")}</div>
           <div>{worldAnchor.genre || "—"}</div>
         </div>
         {worldAnchor.durationMinutes > 0 && (
           <div>
-            <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("时长", "Duration")}</div>
-            <div>{worldAnchor.durationMinutes} {tr("分钟", "min")}</div>
+            <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("时长", "재생 시간", "Duration")}</div>
+            <div>{worldAnchor.durationMinutes} {tr("分钟", "분", "min")}</div>
           </div>
         )}
       </div>
       {worldAnchor.worldRules && (
         <div>
-          <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("世界规则", "World rules")}</div>
+          <div className={`text-xs font-medium mb-1 ${c.muted}`}>{tr("世界规则", "세계 규칙", "World rules")}</div>
           <div className="whitespace-pre-wrap">{worldAnchor.worldRules}</div>
         </div>
       )}
       {graph.characters.length > 0 && (
         <div>
-          <div className={`text-xs font-medium mb-2 ${c.muted}`}>{tr("主要角色", "Main characters")}</div>
+          <div className={`text-xs font-medium mb-2 ${c.muted}`}>{tr("主要角色", "주요 캐릭터", "Main characters")}</div>
           <ul className="space-y-2">
             {graph.characters.map((ch) => (
               <li key={ch.id} className="flex items-start gap-2">
@@ -184,6 +185,7 @@ function ScalePlaceholderView({ c }: { c: Colors }) {
     <div className={`p-6 text-sm ${c.muted}`} data-testid="film-scale-placeholder">
       {tr(
         "规模配置（P2 功能）— 在此设定节点数量目标、分支深度、多结局数量等参数。",
+        "규모 설정 (P2 기능) — 노드 수 목표, 분기 깊이, 다중 결말 수 등의 파라미터를 설정합니다.",
         "Scale settings (P2) — set node count targets, branch depth, number of endings, and other parameters here.",
       )}
     </div>
@@ -259,7 +261,7 @@ export default function FilmWizard({
             onClick={nav.toDashboard}
             className={c.link}
           >
-            ← {tr("互动影游", "Interactive films")}
+            ← {tr("互动影游", "인터랙티브 영화", "Interactive films")}
           </button>
           <div className="flex items-center gap-1 flex-wrap">
           {WIZARD_PHASES.map((p, i) => {
@@ -291,7 +293,7 @@ export default function FilmWizard({
                 >
                   {i + 1}
                 </span>
-                <span>{tr(PHASE_LABELS[p].zh, PHASE_LABELS[p].en)}</span>
+                <span>{tr(PHASE_LABELS[p].zh, PHASE_LABELS[p].ko, PHASE_LABELS[p].en)}</span>
               </button>
             );
           })}
@@ -307,7 +309,7 @@ export default function FilmWizard({
             showPreview ? c.btnPrimary : c.btnSecondary,
           ].join(" ")}
         >
-          {tr("试玩", "Play")}
+          {tr("试玩", "시연", "Play")}
         </button>
       </div>
 
@@ -325,7 +327,7 @@ export default function FilmWizard({
                 currentSubView === sv.key ? c.btnPrimary : c.btnSecondary,
               ].join(" ")}
             >
-              {tr(sv.zh, sv.en)}
+              {tr(sv.zh, sv.ko ?? "", sv.en)}
             </button>
           ))}
         </div>

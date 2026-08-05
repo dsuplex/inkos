@@ -21,11 +21,11 @@ export interface DisplayCard {
   readonly values: ReadonlyArray<string>;
 }
 
-const FANFIC_LABELS: Record<string, { readonly zh: string; readonly en: string }> = {
-  canon: { zh: "原著向", en: "Canon-compliant" },
-  au: { zh: "架空改编", en: "Alternate Universe" },
-  ooc: { zh: "OOC", en: "OOC" },
-  cp: { zh: "CP 向", en: "Pairing (CP)" },
+const FANFIC_LABELS: Record<string, { readonly zh: string; readonly ko: string; readonly en: string }> = {
+  canon: { zh: "原著向", ko: "원작 준수", en: "Canon-compliant" },
+  au: { zh: "架空改编", ko: "패러렐 AU", en: "Alternate Universe" },
+  ooc: { zh: "OOC", ko: "OOC", en: "OOC" },
+  cp: { zh: "CP 向", ko: "커플링 CP", en: "Pairing (CP)" },
 };
 
 // Turn the structured frontmatter of story_frame.md into a few reader-friendly
@@ -36,23 +36,23 @@ export function frontmatterToCards(fm: TruthFrontmatter | null | undefined): Rea
   if (!fm) return [];
   const cards: DisplayCard[] = [];
   const name = fm.protagonist?.name?.trim();
-  if (name) cards.push({ label: tr("主角", "Protagonist"), values: [name] });
+  if (name) cards.push({ label: tr("主角", "주인공", "Protagonist"), values: [name] });
   const genre = fm.genreLock?.primary?.trim();
-  if (genre) cards.push({ label: tr("题材", "Genre"), values: [genre] });
+  if (genre) cards.push({ label: tr("题材", "장르", "Genre"), values: [genre] });
   const era = fm.eraConstraints;
   if (era?.enabled) {
     const eraValues = [era.period, era.region]
       .map((v) => v?.trim())
       .filter((v): v is string => Boolean(v));
-    if (eraValues.length > 0) cards.push({ label: tr("时代背景", "Era"), values: eraValues });
+    if (eraValues.length > 0) cards.push({ label: tr("时代背景", "시대 배경", "Era"), values: eraValues });
   }
   const prohibitions = (fm.prohibitions ?? []).map((p) => p.trim()).filter(Boolean);
-  if (prohibitions.length > 0) cards.push({ label: tr("红线", "Hard Lines"), values: prohibitions });
+  if (prohibitions.length > 0) cards.push({ label: tr("红线", "금기 사항", "Hard Lines"), values: prohibitions });
   if (fm.fanficMode) {
     const fanficLabel = FANFIC_LABELS[fm.fanficMode];
     cards.push({
-      label: tr("同人模式", "Fanfic Mode"),
-      values: [fanficLabel ? tr(fanficLabel.zh, fanficLabel.en) : fm.fanficMode],
+      label: tr("同人模式", "팬픽 모드", "Fanfic Mode"),
+      values: [fanficLabel ? tr(fanficLabel.zh, fanficLabel.ko ?? "", fanficLabel.en) : fm.fanficMode],
     });
   }
   return cards;

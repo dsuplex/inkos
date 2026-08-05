@@ -12,32 +12,32 @@ import { tr } from "../../../../lib/app-language";
 
 const NULL_BOOK_KEY = "__null__";
 
-// [zh, en] tuples resolved through tr() at call time so labels follow the
+// [zh, ko, en] tuples resolved through tr() at call time so labels follow the
 // current app language instead of the language active at module load.
-const AGENT_LABELS: Record<string, readonly [string, string]> = {
-  architect: ["建书", "Create book"],
-  writer: ["写作", "Write"],
-  auditor: ["审计", "Audit"],
-  reviser: ["修订", "Revise"],
-  exporter: ["导出", "Export"],
+const AGENT_LABELS: Record<string, readonly [string, string, string]> = {
+  architect: ["建书", "책 생성", "Create book"],
+  writer: ["写作", "집필", "Write"],
+  auditor: ["审计", "감사", "Audit"],
+  reviser: ["修订", "수정", "Revise"],
+  exporter: ["导出", "내보내기", "Export"],
 };
 
-const TOOL_LABELS: Record<string, readonly [string, string]> = {
-  read: ["读取文件", "Read file"],
-  edit: ["编辑文件", "Edit file"],
-  grep: ["搜索", "Search"],
-  ls: ["列目录", "List directory"],
-  context_compression: ["整理上下文", "Organize context"],
-  propose_action: ["确认动作", "Confirm action"],
-  short_fiction_run: ["短篇生产", "Short fiction run"],
-  generate_cover: ["生成封面", "Generate cover"],
-  script_create: ["剧本创作", "Create script"],
-  storyboard_create: ["分镜创作", "Create storyboard"],
-  interactive_film_create: ["互动影游", "Interactive film"],
-  play_edit: ["编辑互动世界", "Edit interactive world"],
-  play_start: ["启动互动世界", "Start interactive world"],
-  play_revise: ["重做互动回合", "Redo play turn"],
-  play_step: ["推进互动世界", "Advance interactive world"],
+const TOOL_LABELS: Record<string, readonly [string, string, string]> = {
+  read: ["读取文件", "파일 읽기", "Read file"],
+  edit: ["编辑文件", "파일 편집", "Edit file"],
+  grep: ["搜索", "검색", "Search"],
+  ls: ["列目录", "목록", "List directory"],
+  context_compression: ["整理上下文", "컨텍스트 정리", "Organize context"],
+  propose_action: ["确认动作", "동작 확인", "Confirm action"],
+  short_fiction_run: ["短篇生产", "단편 제작", "Short fiction run"],
+  generate_cover: ["生成封面", "표지 생성", "Generate cover"],
+  script_create: ["剧本创作", "대본 창작", "Create script"],
+  storyboard_create: ["分镜创作", "스토리보드 창작", "Create storyboard"],
+  interactive_film_create: ["互动影游", "인터랙티브 영화", "Interactive film"],
+  play_edit: ["编辑互动世界", "인터랙티브 월드 편집", "Edit interactive world"],
+  play_start: ["启动互动世界", "인터랙티브 월드 시작", "Start interactive world"],
+  play_revise: ["重做互动回合", "플레이 턴 재실행", "Redo play turn"],
+  play_step: ["推进互动世界", "인터랙티브 월드 진행", "Advance interactive world"],
 };
 
 export function bookKey(bookId: string | null | undefined): string {
@@ -52,10 +52,10 @@ export function extractErrorMessage(error: string | { code?: string; message?: s
 export function resolveToolLabel(tool: string, agent?: string): string {
   if (tool === "sub_agent" && agent) {
     const label = AGENT_LABELS[agent];
-    return label ? tr(label[0], label[1]) : agent;
+    return label ? tr(label[0], label[1], label[2]) : agent;
   }
   const label = TOOL_LABELS[tool];
-  return label ? tr(label[0], label[1]) : tool;
+  return label ? tr(label[0], label[1], label[2]) : tool;
 }
 
 export function summarizeResult(result: unknown): string {

@@ -375,12 +375,12 @@ export function App() {
             </div>
           )}
           {route.page === "film-studio" && (
-            <Suspense fallback={<div className="p-6 text-sm">{tr("加载创作向导…", "Loading creation wizard…")}</div>}>
+            <Suspense fallback={<div className="p-6 text-sm">{tr("加载创作向导…", "创作向导加载中…", "Loading creation wizard…")}</div>}>
               <FilmWizard projectId={route.projectId} nav={nav} theme={theme} t={t} sse={sse} />
             </Suspense>
           )}
           {route.page === "flow" && (
-            <Suspense fallback={<div className="p-6 text-sm">{tr("加载流程图…", "Loading flow view…")}</div>}>
+            <Suspense fallback={<div className="p-6 text-sm">{tr("加载流程图…", "플로우 뷰 로딩 중…", "Loading flow view…")}</div>}>
               <FlowView projectId={route.projectId} nav={nav} theme={theme} t={t} />
             </Suspense>
           )}
