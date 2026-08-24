@@ -140,6 +140,18 @@ export const FOUNDATION_FILE_LABELS: Record<string, string> = {
   "book_rules.md": "叙事规则",
 };
 
+const FOUNDATION_FILE_LABELS_KO: Record<string, string> = {
+  "outline/story_frame.md": "스토리 기초",
+  "outline/volume_map.md": "볼륨 맵",
+  "current_state.md": "현재 상태",
+  "pending_hooks.md": "복선 풀",
+  "emotional_arcs.md": "감정 아크",
+  "subplot_board.md": "서브플롯 보드",
+  "story_bible.md": "세계관 설정",
+  "volume_outline.md": "볼륨 개요",
+  "book_rules.md": "서사 규칙",
+};
+
 const FOUNDATION_FILE_LABELS_EN: Record<string, string> = {
   "outline/story_frame.md": "Story Foundation",
   "outline/volume_map.md": "Volume Map",
@@ -158,7 +170,10 @@ const FOUNDATION_FILE_LABELS_EN: Record<string, string> = {
 export function foundationFileLabel(name: string): string | undefined {
   const zh = FOUNDATION_FILE_LABELS[name];
   if (zh === undefined) return undefined;
-  return getAppLanguage() === "en" ? FOUNDATION_FILE_LABELS_EN[name] ?? zh : zh;
+  const lang = getAppLanguage();
+  if (lang === "en") return FOUNDATION_FILE_LABELS_EN[name] ?? zh;
+  if (lang === "ko") return FOUNDATION_FILE_LABELS_KO[name] ?? zh;
+  return zh;
 }
 
 // --- current_state.md ---------------------------------------------------

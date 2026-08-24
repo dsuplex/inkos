@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../hooks/use-api";
 import type { SSEMessage } from "../hooks/use-sse";
 import { applyBookCollectionEvent, shouldRefetchBookCollections, shouldRefetchDaemonStatus } from "../hooks/use-book-activity";
@@ -39,6 +39,7 @@ import {
   Zap,
   FolderOpen,
   ChevronRight,
+  ChevronLeft,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -48,6 +49,8 @@ import {
   Rows3,
   Film,
   Languages,
+  Layout,
+  X,
 } from "lucide-react";
 import { InkosLogo } from "./InkosLogo";
 
@@ -117,6 +120,18 @@ export function Sidebar({ nav, activePage, sse, t }: {
   const [projectChatExpanded, setProjectChatExpanded] = useState(true);
   const [myBooksExpanded, setMyBooksExpanded] = useState(true);
   const [filmsExpanded, setFilmsExpanded] = useState(true);
+
+  // Sidebar width & collapse state
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Math.min(360, Math.max(280, Math.round(window.innerWidth * 0.22)));
+    }
+    return 300;
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const sidebarWidthRef = useRef(sidebarWidth);
+  sidebarWidthRef.current = sidebarWidth;
+  const dragStartRef = useRef<{ x: number; width: number } | null>(null);
 
   const books = data?.books ?? [];
   const films = filmsData?.films ?? [];
@@ -283,24 +298,69 @@ export function Sidebar({ nav, activePage, sse, t }: {
     setDeleteTarget(null);
   };
 
+  // Resize handler
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragStartRef.current = { x: e.clientX, width: sidebarWidthRef.current };
+    document.addEventListener("mousemove", handleResizeMove);
+    document.addEventListener("mouseup", handleResizeEnd);
+  }, []);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!dragStartRef.current) return;
+    const delta = e.clientX - dragStartRef.current.x;
+    const newWidth = Math.min(420, Math.max(240, dragStartRef.current.width - delta));
+    setSidebarWidth(newWidth);
+  }, []);
+
+  const handleResizeEnd = useCallback(() => {
+    dragStartRef.current = null;
+    document.removeEventListener("mousemove", handleResizeMove);
+    document.removeEventListener("mouseup", handleResizeEnd);
+  }, [handleResizeMove]);
+
   return (
-    <aside className="w-[260px] shrink-0 border-r border-border bg-background/80 backdrop-blur-md flex flex-col h-full overflow-hidden select-none">
+    <aside
+      className="shrink-0 border-r border-border bg-background/80 backdrop-blur-md flex flex-col h-full overflow-hidden select-none relative"
+      style={{ width: sidebarCollapsed ? 48 : sidebarWidth }}
+    >
+      {/* Resize handle (hidden when collapsed) */}
+      {!sidebarCollapsed && (
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
+        />
+      )}
+
+      {/* Collapse/Expand toggle */}
+      <button
+        onClick={() => setSidebarCollapsed((v) => !v)}
+        className="absolute right-1 top-4 z-10 w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
+        aria-label={sidebarCollapsed ? tr("展开侧边栏", "사이드바 펼치기", "Expand sidebar") : tr("折叠侧边栏", "사이드바 접기", "Collapse sidebar")}
+      >
+        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
+
       {/* Logo Area */}
-      <div className="px-6 py-8">
+      <div className="px-4 py-6 transition-opacity duration-200" style={{ opacity: sidebarCollapsed ? 0 : 1, pointerEvents: sidebarCollapsed ? "none" : "auto" }}>
         <button
           onClick={nav.toDashboard}
-          className="group flex items-center gap-3 hover:opacity-80 transition-all duration-300"
+          className="group flex items-center gap-3 hover:opacity-80 transition-all duration-300 w-full"
         >
-          <InkosLogo className="w-11 h-11 shrink-0 group-hover:scale-105 transition-transform" />
-          <div className="flex flex-col">
-            <span className="font-serif text-[27px] leading-none italic font-medium">InkOS</span>
-            <span className="text-[13px] uppercase tracking-[0.22em] text-muted-foreground font-bold mt-1.5">Studio</span>
-          </div>
+          <InkosLogo className="w-10 h-10 shrink-0 group-hover:scale-105 transition-transform" />
+          {!sidebarCollapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="font-serif text-[24px] leading-none italic font-medium truncate">InkOS</span>
+              <span className="text-[12px] uppercase tracking-[0.2em] text-muted-foreground font-bold mt-1.5 truncate">Studio</span>
+            </div>
+          )}
         </button>
       </div>
 
       {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6">
+      {!sidebarCollapsed && (
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6 min-w-0">
         {/* InkOS Create Section — always visible, two columns. */}
         <div>
           <div className="px-3 mb-2.5">
@@ -632,9 +692,10 @@ export function Sidebar({ nav, activePage, sse, t }: {
           </div>
         </div>
       </div>
+    )}
 
       {/* Footer / Status Area — only show when agent is online */}
-      {daemon?.running && (
+      {!sidebarCollapsed && daemon?.running && (
         <div className="p-4 border-t border-border bg-secondary/40">
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card border border-border shadow-sm">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

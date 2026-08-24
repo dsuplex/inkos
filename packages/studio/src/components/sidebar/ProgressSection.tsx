@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import type { SSEMessage } from "../../hooks/use-sse";
+import { useI18n } from "../../hooks/use-i18n";
+import { tr } from "../../lib/app-language";
 import { Loader2, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { tr } from "../../lib/app-language";
 import { SidebarCard } from "./SidebarCard";
 
 // 每个步骤的 zh 文案同时也是与后台 SSE log 消息匹配的键（后台目前发中文消息）。
@@ -38,6 +39,7 @@ interface ProgressSectionProps {
 }
 
 export function ProgressSection({ sse }: ProgressSectionProps) {
+  const { t } = useI18n();
   const [operation, setOperation] = useState<"idle" | "init" | "write">("idle");
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [activeStep, setActiveStep] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export function ProgressSection({ sse }: ProgressSectionProps) {
   if (!steps) return null;
 
   return (
-    <SidebarCard title={tr("执行", "실행", "Progress")}>
+    <SidebarCard title={t("sidebar.progress")}>
       <ul className="space-y-2">
         {steps.map((step, i) => {
           const status: StepStatus =

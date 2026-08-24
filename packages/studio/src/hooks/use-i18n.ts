@@ -1,4 +1,4 @@
-﻿import { useApi } from "./use-api";
+import { useApi } from "./use-api";
 
 type Lang = "zh" | "ko" | "en";
 
@@ -128,6 +128,19 @@ const strings = {
   "nav.import": { zh: "导入", ko: "가져오기", en: "Import" },
   "nav.radar": { zh: "市场雷达", ko: "시장 레이더", en: "Radar" },
   "nav.doctor": { zh: "环境诊断", ko: "환경 진단", en: "Doctor" },
+
+  // Sidebar specific
+  "sidebar.bookInfo": { zh: "书籍信息", ko: "책 정보", en: "Book Info" },
+  "sidebar.chapters": { zh: "章节", ko: "챕터", en: "Chapters" },
+  "sidebar.noChapters": { zh: "暂无章节", ko: "아직 챕터 없음", en: "No chapters" },
+  "sidebar.chapterLabel": { zh: "第{n}章", ko: "{n}장", en: "Chapter {n}" },
+  "sidebar.progress": { zh: "执行", ko: "실행", en: "Progress" },
+
+  // Export
+  "export.title": { zh: "导出 / 交付", ko: "내보내기 / 전달", en: "Export / Deliver" },
+  "export.json": { zh: "导出 JSON", ko: "JSON 내보내기", en: "Export JSON" },
+  "export.ink": { zh: "导出 Ink", ko: "Ink 내보내기", en: "Export Ink" },
+  "export.html": { zh: "导出可玩网页（HTML）", ko: "플레이어블 웹 내보내기 (HTML)", en: "Export Playable Web (HTML)" },
 
   // Translation
   "translation.title": { zh: "多语翻译 / 译介", ko: "다국어 번역 / 소개", en: "Multilingual Translation" },
